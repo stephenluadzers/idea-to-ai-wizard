@@ -6,14 +6,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Download, Sparkles, Brain, Target, Settings } from "lucide-react";
+import { Copy, Download, Sparkles, Brain, Target, Settings, Search, Database, ExternalLink, Github } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FormData {
   idea: string;
   domain: string;
   targetAudience: string;
   specificRequirements: string;
+}
+
+interface KnowledgeBase {
+  title: string;
+  url: string;
+  description: string;
+  source: string;
+  type: 'dataset' | 'api' | 'documentation' | 'repository';
+}
+
+interface KnowledgeBaseSearchState {
+  results: KnowledgeBase[];
+  isSearching: boolean;
+  selectedBases: KnowledgeBase[];
 }
 
 export const PromptDesigner = () => {
@@ -24,12 +39,96 @@ export const PromptDesigner = () => {
     specificRequirements: ""
   });
   
+  const [knowledgeSearch, setKnowledgeSearch] = useState<KnowledgeBaseSearchState>({
+    results: [],
+    isSearching: false,
+    selectedBases: []
+  });
+  
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const searchKnowledgeBases = async () => {
+    if (!formData.idea.trim() && !formData.domain.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide your AI assistant idea or domain to search for relevant knowledge bases.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setKnowledgeSearch(prev => ({ ...prev, isSearching: true }));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('search-knowledge-bases', {
+        body: {
+          query: formData.idea,
+          domain: formData.domain
+        }
+      });
+
+      if (error) {
+        console.error('Error searching knowledge bases:', error);
+        toast({
+          title: "Search Error",
+          description: "Failed to search for knowledge bases. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setKnowledgeSearch(prev => ({ 
+        ...prev, 
+        results: data.results || [],
+        isSearching: false 
+      }));
+
+      toast({
+        title: "Search Complete",
+        description: `Found ${data.results?.length || 0} relevant knowledge bases.`,
+      });
+    } catch (error) {
+      console.error('Error searching knowledge bases:', error);
+      setKnowledgeSearch(prev => ({ ...prev, isSearching: false }));
+      toast({
+        title: "Search Error",
+        description: "Failed to search for knowledge bases. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const toggleKnowledgeBase = (kb: KnowledgeBase) => {
+    setKnowledgeSearch(prev => ({
+      ...prev,
+      selectedBases: prev.selectedBases.find(selected => selected.url === kb.url)
+        ? prev.selectedBases.filter(selected => selected.url !== kb.url)
+        : [...prev.selectedBases, kb]
+    }));
+  };
+
+  const getSourceIcon = (source: string) => {
+    switch (source.toLowerCase()) {
+      case 'kaggle': return <Database className="w-4 h-4" />;
+      case 'github': return <Github className="w-4 h-4" />;
+      default: return <ExternalLink className="w-4 h-4" />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'dataset': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      case 'api': return 'bg-green-500/10 text-green-400 border-green-500/20';
+      case 'repository': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+      case 'documentation': return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+      default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+    }
   };
 
   const generatePrompt = () => {
@@ -46,6 +145,11 @@ export const PromptDesigner = () => {
     
     // Simulate generation process
     setTimeout(() => {
+      let knowledgeBaseSection = "";
+      if (knowledgeSearch.selectedBases.length > 0) {
+        knowledgeBaseSection = `\n\n**Recommended Knowledge Bases:**\n${knowledgeSearch.selectedBases.map(kb => `- [${kb.title}](${kb.url}) - ${kb.description} (${kb.source})`).join('\n')}`;
+      }
+
       const prompt = `# **Role:**
 You are a ${formData.domain || 'specialized'} AI assistant designed to ${formData.idea}.
 
@@ -53,7 +157,7 @@ You are a ${formData.domain || 'specialized'} AI assistant designed to ${formDat
 To provide expert guidance and support in ${formData.domain || 'your domain'}, delivering precise, actionable insights tailored to ${formData.targetAudience || 'users'}.
 
 # **Context:**
-This AI operates as a ${formData.domain || 'domain'} specialist, leveraging comprehensive knowledge and best practices to assist ${formData.targetAudience || 'users'} in achieving their goals efficiently and effectively.
+This AI operates as a ${formData.domain || 'domain'} specialist, leveraging comprehensive knowledge and best practices to assist ${formData.targetAudience || 'users'} in achieving their goals efficiently and effectively.${knowledgeBaseSection}
 
 # **Instructions:**
 - **Persona**: You are analytical, authoritative, and highly knowledgeable in ${formData.domain || 'your field'}. Your tone is professional, clear, and solution-oriented, ensuring maximum value in every interaction.
@@ -74,10 +178,11 @@ Focus on delivering clear, actionable guidance that directly addresses user need
 
 **Recommended AI Model:** Google Gemini 2.5 Pro (for complex reasoning and multimodal capabilities)
 
-**Knowledge Base Requirements:** 
-- ${formData.domain || 'Domain'}-specific documentation and best practices
-- Industry standards and compliance guidelines
-- Current trends and emerging technologies in ${formData.domain || 'the field'}`;
+**Knowledge Base Integration:** 
+${knowledgeSearch.selectedBases.length > 0 
+  ? `Leverage the ${knowledgeSearch.selectedBases.length} curated knowledge sources listed above for domain-specific information and data-driven insights.`
+  : `Consider integrating domain-specific datasets from Kaggle, GitHub repositories, and public APIs to enhance the assistant's knowledge base and provide more accurate, up-to-date information.`
+}`;
 
       setGeneratedPrompt(prompt);
       setIsGenerating(false);
@@ -151,7 +256,7 @@ Focus on delivering clear, actionable guidance that directly addresses user need
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Input Form */}
           <Card className="bg-gradient-card border-border/50 shadow-card">
             <CardHeader>
@@ -233,6 +338,98 @@ Focus on delivering clear, actionable guidance that directly addresses user need
                   </>
                 )}
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Knowledge Base Search */}
+          <Card className="bg-gradient-card border-border/50 shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="w-5 h-5 text-accent" />
+                Knowledge Base Discovery
+              </CardTitle>
+              <CardDescription>
+                Find relevant datasets, APIs, and repositories to enhance your AI assistant.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                onClick={searchKnowledgeBases}
+                disabled={knowledgeSearch.isSearching || (!formData.idea.trim() && !formData.domain.trim())}
+                className="w-full"
+                variant="secondary"
+              >
+                {knowledgeSearch.isSearching ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-secondary-foreground/30 border-t-secondary-foreground rounded-full animate-spin mr-2" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 mr-2" />
+                    Search Knowledge Bases
+                  </>
+                )}
+              </Button>
+
+              {knowledgeSearch.results.length > 0 && (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <p className="text-sm text-muted-foreground">
+                    Found {knowledgeSearch.results.length} relevant sources. Click to select:
+                  </p>
+                  {knowledgeSearch.results.map((kb, index) => {
+                    const isSelected = knowledgeSearch.selectedBases.some(selected => selected.url === kb.url);
+                    return (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+                          isSelected 
+                            ? 'border-primary bg-primary/10' 
+                            : 'border-border/50 hover:border-border'
+                        }`}
+                        onClick={() => toggleKnowledgeBase(kb)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {getSourceIcon(kb.source)}
+                              <span className="font-medium text-sm truncate">{kb.title}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{kb.description}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="outline" className={`text-xs ${getTypeColor(kb.type)}`}>
+                                {kb.type}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {kb.source}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {knowledgeSearch.selectedBases.length > 0 && (
+                <div className="space-y-2">
+                  <Separator />
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {knowledgeSearch.selectedBases.length} selected
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setKnowledgeSearch(prev => ({ ...prev, selectedBases: [] }))}
+                      className="text-xs h-6 px-2"
+                    >
+                      Clear all
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
