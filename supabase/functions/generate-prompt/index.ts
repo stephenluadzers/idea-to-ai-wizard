@@ -188,6 +188,102 @@ Format: "Consider the user's likely intent, knowledge level, and needs. Explain 
 - Optimize every word for maximum clarity and impact
 - Include testing strategies and success metrics
 - Provide implementation notes and best practices
+- **ALWAYS include LLM recommendation section with detailed analysis**
+
+**LLM RECOMMENDATION FORMAT:**
+After generating the prompt, ALWAYS include:
+
+---
+## **RECOMMENDED AI MODEL:**
+
+**Primary Recommendation:** [Model Name]
+
+**Rationale:**
+- [Specific capability match 1]
+- [Specific capability match 2]
+- [Specific capability match 3]
+
+**Alternative Options:**
+1. **[Alternative Model 1]**: [When to use this instead]
+2. **[Alternative Model 2]**: [When to use this instead]
+
+**Model Selection Criteria:**
+- Context Window Requirement: [X tokens needed]
+- Reasoning Complexity: [Simple/Medium/High/Expert]
+- Multimodal Needs: [None/Images/Audio/Video]
+- Speed vs Quality Trade-off: [Optimization preference]
+- Cost Considerations: [Budget tier]
+- Specialized Capabilities: [Domain-specific needs]
+
+---
+
+## LLM CAPABILITY MATRIX:
+
+### **OpenAI Models**
+- **GPT-5** (Recommended for: Complex reasoning, multimodal, large context, highest accuracy)
+  - Context: 200K tokens | Strengths: Superior reasoning, nuanced understanding
+- **GPT-5-mini** (Recommended for: Balanced performance, cost-effective quality)
+  - Context: 128K tokens | Strengths: Fast, efficient, strong reasoning
+- **GPT-5-nano** (Recommended for: High-volume, speed-critical tasks)
+  - Context: 128K tokens | Strengths: Lowest latency, cost-effective
+- **o1** (Recommended for: Deep analytical reasoning, research tasks)
+  - Context: 200K tokens | Strengths: Extended thinking, complex problem-solving
+- **o1-mini** (Recommended for: Fast reasoning without extended thinking)
+  - Context: 128K tokens | Strengths: Quick analytical tasks
+
+### **Anthropic Models**
+- **Claude Opus 4** (Recommended for: Highest intelligence, complex analysis, creative tasks)
+  - Context: 200K tokens | Strengths: Best reasoning, nuanced understanding, creative excellence
+- **Claude Sonnet 4** (Recommended for: Balanced performance, excellent reasoning)
+  - Context: 200K tokens | Strengths: Fast, efficient, high quality
+- **Claude Haiku 3.5** (Recommended for: Speed, simple tasks, high-volume)
+  - Context: 200K tokens | Strengths: Fastest response, cost-effective
+
+### **Google Models**
+- **Gemini 2.5 Pro** (Recommended for: Multimodal, large context, complex reasoning)
+  - Context: 2M tokens | Strengths: Massive context, vision, multilingual
+- **Gemini 2.5 Flash** (Recommended for: Balanced multimodal, fast responses)
+  - Context: 1M tokens | Strengths: Speed, efficiency, good reasoning
+- **Gemini 2.5 Flash Lite** (Recommended for: Simple classification, summarization)
+  - Context: 1M tokens | Strengths: Ultra-fast, cost-effective
+
+### **Meta Models**
+- **Llama 3.3 70B** (Recommended for: Open-source, cost-effective, good reasoning)
+  - Context: 128K tokens | Strengths: Balanced performance, customizable
+- **Llama 3.1 405B** (Recommended for: Large-scale reasoning, open-source power)
+  - Context: 128K tokens | Strengths: Highest capability open model
+
+### **Perplexity Models**
+- **Llama 3.1 Sonar Huge** (Recommended for: Real-time web search, current information)
+  - Context: 127K tokens | Strengths: Online search, up-to-date information
+- **Llama 3.1 Sonar Large** (Recommended for: Balanced search, cost-effective)
+  - Context: 127K tokens | Strengths: Good search quality, faster
+- **Llama 3.1 Sonar Small** (Recommended for: Quick searches, high-volume)
+  - Context: 127K tokens | Strengths: Fast search, economical
+
+### **Specialized Models**
+- **Mistral Large 2** (Recommended for: European data privacy, multilingual)
+  - Context: 128K tokens | Strengths: Strong reasoning, EU compliance
+- **DeepSeek V3** (Recommended for: Code generation, technical tasks)
+  - Context: 64K tokens | Strengths: Coding, mathematics, analysis
+
+## MODEL SELECTION DECISION TREE:
+
+**Task Complexity Analysis:**
+1. **Simple/Routine Tasks** → GPT-5-nano, Claude Haiku, Gemini Flash Lite
+2. **Moderate Complexity** → GPT-5-mini, Claude Sonnet, Gemini Flash
+3. **High Complexity** → GPT-5, Claude Opus, Gemini Pro
+4. **Expert-Level Reasoning** → o1, Claude Opus 4, Gemini 2.5 Pro
+
+**Special Requirements:**
+- **Real-time Information** → Perplexity Sonar models
+- **Massive Context** → Gemini Pro (2M tokens)
+- **Multimodal** → GPT-5, Claude Opus/Sonnet, Gemini models
+- **Cost Optimization** → Llama 3.3, GPT-5-nano, Claude Haiku
+- **Privacy/Open-Source** → Llama models, Mistral
+- **Coding Tasks** → GPT-5, Claude Opus, DeepSeek
+- **Creative Writing** → Claude Opus 4, GPT-5
+- **Analytical Research** → o1, Claude Opus, Perplexity Sonar
 
 **Quality Standards:**
 - Every prompt must be immediately actionable
