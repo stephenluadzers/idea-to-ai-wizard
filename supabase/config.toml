@@ -56,3 +56,6 @@ enable_confirmations = false
 
 [functions.search-knowledge-bases]
 verify_jwt = false
+
+[functions.generate-prompt]
+verify_jwt = false
