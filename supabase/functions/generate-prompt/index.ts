@@ -287,7 +287,32 @@ When generating prompts that should reference visual content:
 - Be concise but profound in your observations
 - **When images are provided**: Analyze visual content and ask clarifying questions about intent
 
-**In Generation Mode:**
+**In Generation Mode - MANDATORY REQUIREMENTS:**
+
+YOU MUST INCLUDE ALL THREE OF THESE SECTIONS IN EVERY GENERATED PROMPT. NO EXCEPTIONS:
+
+1. **ERROR HANDLING PROTOCOLS (MANDATORY)**
+   - MUST include at least 5 specific error protocols
+   - Each protocol MUST define: Trigger, Detection, Response, Fallback, Recovery
+   - MUST address: Input validation failures, contradictory information, confidence thresholds, resource limitations, content quality issues
+   - Format MUST follow the Error Protocol Structure exactly
+   - IF you generate a prompt without this section, the prompt is INVALID
+
+2. **PERFORMANCE BENCHMARKS (MANDATORY)**
+   - MUST include specific numeric targets for accuracy, speed, and quality
+   - MUST define fallback conditions with concrete thresholds
+   - MUST include at least: Accuracy targets, Speed requirements, Quality thresholds, Fallback conditions
+   - Example: "Action item extraction: 95% accuracy minimum, <3s latency"
+   - IF you generate a prompt without this section, the prompt is INVALID
+
+3. **LLM RECOMMENDATION (MANDATORY)**
+   - MUST recommend a specific AI model with detailed rationale
+   - MUST include alternative options
+   - MUST specify model selection criteria
+   - MUST define performance expectations
+   - IF you generate a prompt without this section, the prompt is INVALID
+
+**Additional Generation Requirements:**
 - Produce prompts of exceptional depth and precision
 - Layer multiple techniques for synergistic effects
 - Include meta-cognitive elements (self-correction, validation, improvement)
@@ -296,10 +321,16 @@ When generating prompts that should reference visual content:
 - Optimize every word for maximum clarity and impact
 - Include testing strategies and success metrics
 - Provide implementation notes and best practices
-- **ALWAYS include explicit error handling protocols**
-- **ALWAYS define measurable performance benchmarks**
-- **ALWAYS include LLM recommendation section with detailed analysis**
 - **When relevant**: Include visual artifact descriptions and requirements
+
+**VALIDATION CHECKPOINT:**
+Before completing your response, verify:
+✓ Error Handling Protocols section is present and complete
+✓ Performance Benchmarks section is present with numeric targets
+✓ LLM Recommendation section is present with specific model
+✓ All three sections follow the required formats
+
+IF ANY SECTION IS MISSING, YOUR OUTPUT IS INCOMPLETE AND MUST BE REGENERATED.
 
 **LLM RECOMMENDATION FORMAT:**
 After generating the prompt, ALWAYS include:
@@ -456,6 +487,8 @@ Remember: You are not just writing prompts - you are architecting cognitive syst
 
 Keep conversational responses sharp and insightful. Generate prompts only when you have achieved deep understanding of requirements and constraints.`;
 
+    console.log("Initiating AI request with", messages.length, "messages");
+    
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -474,32 +507,104 @@ Keep conversational responses sharp and insightful. Generate prompts only when y
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("AI gateway error:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+        timestamp: new Date().toISOString()
+      });
+      
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
+        return new Response(JSON.stringify({ 
+          error: "Rate limits exceeded. Please try again in a few moments.",
+          fallback: "Consider breaking down your request into smaller parts or waiting before retrying."
+        }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }), {
+        return new Response(JSON.stringify({ 
+          error: "Payment required. Please add credits to your Lovable AI workspace.",
+          fallback: "Visit your workspace settings to add credits and continue using AI features."
+        }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      
+      if (response.status === 400) {
+        return new Response(JSON.stringify({ 
+          error: "Invalid request format. Please check your input and try again.",
+          fallback: "Ensure your message is properly formatted and contains valid content."
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      // Generic error with fallback
+      return new Response(JSON.stringify({ 
+        error: "AI service temporarily unavailable. Please try again.",
+        fallback: "The service may be experiencing high load. Wait a moment and retry your request.",
+        details: response.status >= 500 ? "Server error" : "Request error"
+      }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Validate that we have a readable stream
+    if (!response.body) {
+      console.error("No response body received from AI gateway");
+      return new Response(JSON.stringify({ 
+        error: "Invalid response from AI service",
+        fallback: "Please try your request again"
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("AI stream started successfully");
+    
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
-    console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    console.error("Fatal error in generate-prompt function:", {
+      error: e,
+      message: e instanceof Error ? e.message : "Unknown error",
+      stack: e instanceof Error ? e.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Determine error type and provide appropriate fallback
+    let errorMessage = "An unexpected error occurred";
+    let fallbackMessage = "Please try again or simplify your request";
+    
+    if (e instanceof Error) {
+      if (e.message.includes("LOVABLE_API_KEY")) {
+        errorMessage = "API configuration error";
+        fallbackMessage = "Contact support if this issue persists";
+      } else if (e.message.includes("JSON")) {
+        errorMessage = "Invalid request format";
+        fallbackMessage = "Check your input format and try again";
+      } else if (e.message.includes("network") || e.message.includes("fetch")) {
+        errorMessage = "Network connection error";
+        fallbackMessage = "Check your connection and retry";
+      } else {
+        errorMessage = e.message;
+      }
+    }
+    
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      fallback: fallbackMessage,
+      timestamp: new Date().toISOString()
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
