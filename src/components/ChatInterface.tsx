@@ -3,20 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Copy, Download, Sparkles, Loader2 } from "lucide-react";
+import { Send, Copy, Download, Sparkles, Loader2, ImagePlus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   role: "user" | "assistant";
-  content: string;
+  content: string | Array<{ type: "text" | "image_url"; text?: string; image_url?: { url: string } }>;
 }
 
 export const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<Array<{ url: string; file: File }>>([]);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -24,10 +26,65 @@ export const ChatInterface = () => {
     }
   }, [messages]);
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    files.forEach(file => {
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid File",
+          description: "Please upload only image files.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (file.size > 20 * 1024 * 1024) { // 20MB limit
+        toast({
+          title: "File Too Large",
+          description: "Images must be under 20MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUploadedImages(prev => [...prev, { url: event.target?.result as string, file }]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const streamChat = async (userMessage: string) => {
-    const newMessages = [...messages, { role: "user" as const, content: userMessage }];
+    // Build message content with images
+    let messageContent: string | Array<{ type: "text" | "image_url"; text?: string; image_url?: { url: string } }>;
+    
+    if (uploadedImages.length > 0) {
+      messageContent = [
+        { type: "text" as const, text: userMessage },
+        ...uploadedImages.map(img => ({ 
+          type: "image_url" as const, 
+          image_url: { url: img.url } 
+        }))
+      ];
+    } else {
+      messageContent = userMessage;
+    }
+
+    const newMessages = [...messages, { role: "user" as const, content: messageContent }];
     setMessages(newMessages);
     setIsLoading(true);
+    setUploadedImages([]); // Clear images after sending
 
     try {
       const response = await fetch(
@@ -106,7 +163,7 @@ export const ChatInterface = () => {
   };
 
   const handleSend = () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && uploadedImages.length === 0) || isLoading) return;
     streamChat(input);
     setInput("");
   };
@@ -124,7 +181,10 @@ export const ChatInterface = () => {
       .reverse()
       .find((m) => m.role === "assistant");
     if (lastAssistantMessage) {
-      navigator.clipboard.writeText(lastAssistantMessage.content);
+      const content = typeof lastAssistantMessage.content === "string" 
+        ? lastAssistantMessage.content 
+        : lastAssistantMessage.content.find(part => part.type === "text")?.text || "";
+      navigator.clipboard.writeText(content);
       toast({
         title: "Copied!",
         description: "Prompt copied to clipboard.",
@@ -138,7 +198,10 @@ export const ChatInterface = () => {
       .reverse()
       .find((m) => m.role === "assistant");
     if (lastAssistantMessage) {
-      const blob = new Blob([lastAssistantMessage.content], { type: "text/markdown" });
+      const content = typeof lastAssistantMessage.content === "string" 
+        ? lastAssistantMessage.content 
+        : lastAssistantMessage.content.find(part => part.type === "text")?.text || "";
+      const blob = new Blob([content], { type: "text/markdown" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -160,8 +223,11 @@ export const ChatInterface = () => {
             <Card className="p-8 text-center bg-gradient-card border-border/50">
               <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
               <h3 className="text-xl font-semibold mb-2">Start a Conversation</h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-4">
                 Tell me about your AI assistant idea, and I'll help you create a comprehensive structured prompt.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                💡 Tip: Upload images of workflows, business flyers, diagrams, or screenshots to analyze and create contextual prompts!
               </p>
             </Card>
           )}
@@ -178,9 +244,30 @@ export const ChatInterface = () => {
                     : "bg-gradient-card border-border/50"
                 }`}
               >
-                <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
-                  {message.content}
-                </div>
+                {typeof message.content === "string" ? (
+                  <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                    {message.content}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {message.content.map((part, partIndex) => (
+                      <div key={partIndex}>
+                        {part.type === "text" && part.text && (
+                          <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                            {part.text}
+                          </div>
+                        )}
+                        {part.type === "image_url" && part.image_url && (
+                          <img
+                            src={part.image_url.url}
+                            alt="Uploaded"
+                            className="max-w-full rounded-lg border border-border/20"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </Card>
             </div>
           ))}
@@ -220,27 +307,70 @@ export const ChatInterface = () => {
             </div>
           )}
 
+          {uploadedImages.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {uploadedImages.map((img, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={img.url}
+                    alt={`Upload ${index + 1}`}
+                    className="h-20 w-20 object-cover rounded-lg border border-border/50"
+                  />
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeImage(index)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <Textarea
-              placeholder="Describe your AI assistant idea... (Press Enter to send, Shift+Enter for new line)"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="min-h-[80px] bg-secondary border-border/50 resize-none"
-              disabled={isLoading}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-              className="bg-gradient-primary text-primary-foreground shadow-primary hover:shadow-glow transition-all duration-300"
-              size="icon"
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-            </Button>
+            <div className="flex-1 space-y-2">
+              <Textarea
+                placeholder="Describe your AI assistant idea... (Press Enter to send, Shift+Enter for new line)"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="min-h-[80px] bg-secondary border-border/50 resize-none"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+              >
+                <ImagePlus className="w-5 h-5" />
+              </Button>
+              <Button
+                onClick={handleSend}
+                disabled={(!input.trim() && uploadedImages.length === 0) || isLoading}
+                className="bg-gradient-primary text-primary-foreground shadow-primary hover:shadow-glow transition-all duration-300 shrink-0"
+                size="icon"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
