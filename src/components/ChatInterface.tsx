@@ -3,22 +3,24 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Copy, Download, Sparkles, Loader2, ImagePlus, X } from "lucide-react";
+import { Send, Copy, Download, Sparkles, Loader2, FileUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FileUploadManager, UploadedFile } from "./FileUploadManager";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Message {
   role: "user" | "assistant";
-  content: string | Array<{ type: "text" | "image_url"; text?: string; image_url?: { url: string } }>;
+  content: string | Array<{ type: "text" | "image_url" | "document"; text?: string; image_url?: { url: string }; document?: { name: string; url: string; type: string } }>;
 }
 
 export const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<Array<{ url: string; file: File }>>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -26,57 +28,34 @@ export const ChatInterface = () => {
     }
   }, [messages]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    
-    files.forEach(file => {
-      if (!file.type.startsWith("image/")) {
-        toast({
-          title: "Invalid File",
-          description: "Please upload only image files.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (file.size > 20 * 1024 * 1024) { // 20MB limit
-        toast({
-          title: "File Too Large",
-          description: "Images must be under 20MB.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setUploadedImages(prev => [...prev, { url: event.target?.result as string, file }]);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setUploadedImages(prev => prev.filter((_, i) => i !== index));
-  };
-
   const streamChat = async (userMessage: string) => {
-    // Build message content with images
-    let messageContent: string | Array<{ type: "text" | "image_url"; text?: string; image_url?: { url: string } }>;
+    // Build message content with files
+    let messageContent: Message["content"];
     
-    if (uploadedImages.length > 0) {
-      messageContent = [
-        { type: "text" as const, text: userMessage },
-        ...uploadedImages.map(img => ({ 
-          type: "image_url" as const, 
-          image_url: { url: img.url } 
-        }))
+    if (uploadedFiles.length > 0) {
+      const contentParts: Array<{ type: "text" | "image_url" | "document"; text?: string; image_url?: { url: string }; document?: { name: string; url: string; type: string } }> = [
+        { type: "text" as const, text: userMessage }
       ];
+      
+      uploadedFiles.forEach(file => {
+        if (file.type === "image") {
+          contentParts.push({ 
+            type: "image_url" as const, 
+            image_url: { url: file.url } 
+          });
+        } else {
+          contentParts.push({
+            type: "document" as const,
+            document: {
+              name: file.file.name,
+              url: file.url,
+              type: file.metadata.format
+            }
+          });
+        }
+      });
+      
+      messageContent = contentParts;
     } else {
       messageContent = userMessage;
     }
@@ -84,7 +63,8 @@ export const ChatInterface = () => {
     const newMessages = [...messages, { role: "user" as const, content: messageContent }];
     setMessages(newMessages);
     setIsLoading(true);
-    setUploadedImages([]); // Clear images after sending
+    setUploadedFiles([]); // Clear files after sending
+    setIsUploadDialogOpen(false);
 
     try {
       const response = await fetch(
@@ -163,7 +143,7 @@ export const ChatInterface = () => {
   };
 
   const handleSend = () => {
-    if ((!input.trim() && uploadedImages.length === 0) || isLoading) return;
+    if ((!input.trim() && uploadedFiles.length === 0) || isLoading) return;
     streamChat(input);
     setInput("");
   };
@@ -226,9 +206,11 @@ export const ChatInterface = () => {
               <p className="text-muted-foreground mb-4">
                 Tell me about your AI assistant idea, and I'll help you create a comprehensive structured prompt.
               </p>
-              <p className="text-sm text-muted-foreground">
-                💡 Tip: Upload images of workflows, business flyers, diagrams, or screenshots to analyze and create contextual prompts!
-              </p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>📸 Images: Workflows, flyers, diagrams, screenshots</p>
+                <p>📄 Documents: Business plans, reports, PDFs, Word docs</p>
+                <p>🎯 All files will be analyzed to create contextual metaprompts</p>
+              </div>
             </Card>
           )}
 
@@ -263,6 +245,14 @@ export const ChatInterface = () => {
                             alt="Uploaded"
                             className="max-w-full rounded-lg border border-border/20"
                           />
+                        )}
+                        {part.type === "document" && part.document && (
+                          <div className="bg-secondary/50 p-3 rounded-lg border border-border/20">
+                            <p className="text-sm font-medium">{part.document.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {part.document.type}
+                            </p>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -307,28 +297,6 @@ export const ChatInterface = () => {
             </div>
           )}
 
-          {uploadedImages.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {uploadedImages.map((img, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={img.url}
-                    alt={`Upload ${index + 1}`}
-                    className="h-20 w-20 object-cover rounded-lg border border-border/50"
-                  />
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removeImage(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-
           <div className="flex gap-2">
             <div className="flex-1 space-y-2">
               <Textarea
@@ -341,26 +309,35 @@ export const ChatInterface = () => {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-                variant="outline"
-                size="icon"
-                className="shrink-0"
-              >
-                <ImagePlus className="w-5 h-5" />
-              </Button>
+              <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    disabled={isLoading}
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                  >
+                    <FileUp className="w-5 h-5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Upload Files</DialogTitle>
+                  </DialogHeader>
+                  <FileUploadManager
+                    files={uploadedFiles}
+                    onFilesChange={setUploadedFiles}
+                  />
+                  {uploadedFiles.length > 0 && (
+                    <Button onClick={() => setIsUploadDialogOpen(false)} className="w-full">
+                      Done ({uploadedFiles.length} file{uploadedFiles.length !== 1 ? 's' : ''})
+                    </Button>
+                  )}
+                </DialogContent>
+              </Dialog>
               <Button
                 onClick={handleSend}
-                disabled={(!input.trim() && uploadedImages.length === 0) || isLoading}
+                disabled={(!input.trim() && uploadedFiles.length === 0) || isLoading}
                 className="bg-gradient-primary text-primary-foreground shadow-primary hover:shadow-glow transition-all duration-300 shrink-0"
                 size="icon"
               >
