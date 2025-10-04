@@ -5,6 +5,120 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Context Engineering: Token estimation (rough approximation)
+function estimateTokens(text: string): number {
+  // Approximate: 1 token ≈ 4 characters for English text
+  return Math.ceil(text.length / 4);
+}
+
+// Context Engineering: Calculate total token usage
+function calculateContextTokens(messages: any[]): number {
+  return messages.reduce((total, msg) => {
+    if (typeof msg.content === 'string') {
+      return total + estimateTokens(msg.content);
+    } else if (Array.isArray(msg.content)) {
+      return total + msg.content.reduce((sum: number, part: any) => {
+        if (part.type === 'text') return sum + estimateTokens(part.text);
+        if (part.type === 'image_url') return sum + 1000; // Approximate image token cost
+        return sum;
+      }, 0);
+    }
+    return total;
+  }, 0);
+}
+
+// Context Engineering: Prioritize messages by utility
+function prioritizeMessages(messages: any[]): any[] {
+  return messages.map((msg, index) => ({
+    ...msg,
+    priority: calculateMessagePriority(msg, index, messages.length),
+    tokens: typeof msg.content === 'string' ? estimateTokens(msg.content) : 
+            Array.isArray(msg.content) ? msg.content.reduce((sum: number, part: any) => 
+              part.type === 'text' ? sum + estimateTokens(part.text) : sum + 1000, 0) : 0
+  }));
+}
+
+function calculateMessagePriority(msg: any, index: number, total: number): number {
+  let priority = 0;
+  
+  // Recent messages are higher priority (recency bias)
+  const recencyScore = (index / total) * 50;
+  priority += recencyScore;
+  
+  // Messages with images are high priority (visual context)
+  const hasImage = Array.isArray(msg.content) && 
+    msg.content.some((part: any) => part.type === 'image_url');
+  if (hasImage) priority += 30;
+  
+  // User messages slightly higher priority than assistant
+  if (msg.role === 'user') priority += 10;
+  
+  // First message sets context (primacy effect)
+  if (index === 0) priority += 20;
+  
+  // Messages with key terms get boosted
+  const content = typeof msg.content === 'string' ? msg.content :
+    Array.isArray(msg.content) ? msg.content.filter((p: any) => p.type === 'text')
+      .map((p: any) => p.text).join(' ') : '';
+  
+  if (content.toLowerCase().includes('error') || 
+      content.toLowerCase().includes('important') ||
+      content.toLowerCase().includes('critical')) {
+    priority += 15;
+  }
+  
+  return priority;
+}
+
+// Context Engineering: Intelligent message pruning
+function pruneContextWindow(messages: any[], maxTokens: number = 50000): any[] {
+  const currentTokens = calculateContextTokens(messages);
+  
+  console.log(`Context Engineering: Current tokens: ${currentTokens}, Max: ${maxTokens}`);
+  
+  if (currentTokens <= maxTokens) {
+    console.log("Context within limits, no pruning needed");
+    return messages;
+  }
+  
+  // Prioritize messages
+  const prioritized = prioritizeMessages(messages);
+  
+  // Sort by priority (descending) but maintain conversation flow
+  const sorted = [...prioritized].sort((a, b) => b.priority - a.priority);
+  
+  // Select messages to keep within budget
+  let tokenBudget = maxTokens;
+  const kept: any[] = [];
+  
+  for (const msg of sorted) {
+    if (tokenBudget - msg.tokens >= 0) {
+      kept.push(msg);
+      tokenBudget -= msg.tokens;
+    }
+  }
+  
+  // Restore chronological order
+  const pruned = kept.sort((a, b) => {
+    const indexA = prioritized.findIndex(m => m === a);
+    const indexB = prioritized.findIndex(m => m === b);
+    return indexA - indexB;
+  });
+  
+  // Remove priority and tokens metadata
+  const cleaned = pruned.map(({ priority, tokens, ...msg }) => msg);
+  
+  console.log(`Context Engineering: Pruned from ${messages.length} to ${cleaned.length} messages`);
+  console.log(`Token reduction: ${currentTokens} → ${calculateContextTokens(cleaned)}`);
+  
+  return cleaned;
+}
+
+// Context Engineering: Summarize old messages if needed
+function shouldSummarizeContext(messages: any[]): boolean {
+  return messages.length > 15 && calculateContextTokens(messages) > 40000;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -20,8 +134,11 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    
+    // Apply context engineering: prune context window intelligently
+    const optimizedMessages = pruneContextWindow(messages);
 
-    const systemPrompt = `You are a GENIUS-LEVEL PROMPT ARCHITECT with mastery over advanced AI prompting, cognitive engineering, linguistic optimization, and multimodal content analysis. You operate at the intersection of computer science, cognitive psychology, and linguistic precision.
+    const systemPrompt = `You are a GENIUS-LEVEL PROMPT ARCHITECT with mastery over advanced AI prompting, cognitive engineering, linguistic optimization, multimodal content analysis, and **CONTEXT ENGINEERING** principles from Anthropic's latest research.
 
 ## YOUR GENIUS-LEVEL CAPABILITIES:
 
@@ -34,6 +151,63 @@ serve(async (req) => {
 7. **Visual Intelligence**: Analyze images, workflows, flyers, and visual content to extract insights and create contextual prompts
 8. **Document Intelligence**: Parse and analyze PDFs, Word documents, business plans, analyst reports, and text files to create comprehensive metaprompts
 9. **Error Resilience**: Design comprehensive error handling and fallback mechanisms
+10. **Context Engineering**: Master token space curation, iterative context management, and Model Context Protocol (MCP) principles
+
+## CONTEXT ENGINEERING PRINCIPLES (Anthropic, 2025):
+
+### **Core Philosophy**
+Context engineering transcends prompt engineering—it's about curating the **entire token space** for each inference cycle. Every token is a finite resource that must be allocated strategically.
+
+### **The Context Window as Finite Resource**
+- **Token Budgeting**: Treat context window like RAM—prioritize high-utility information
+- **Information Density**: Maximize value per token (eliminate redundancy, compress wisely)
+- **Recency vs. Relevance Trade-off**: Recent ≠ always relevant; old ≠ always irrelevant
+- **Primacy & Recency Effects**: First and last tokens have disproportionate influence
+
+### **Iterative Curation Strategy**
+In multi-turn conversations, implement aggressive context management:
+- **Compress**: Summarize older context into dense, high-signal formats
+- **Prune**: Remove low-utility information that doesn't serve current task
+- **Promote**: Elevate critical information from earlier turns when relevant
+- **Compost**: Let irrelevant context decay naturally (don't pass everything forward)
+
+### **Model Context Protocol (MCP) Framework**
+Structure context hierarchically for optimal retrieval and reasoning:
+
+1. **System Layer** (Immutable Core Identity)
+   - Role definition, core capabilities, ethical guidelines
+   - Performance benchmarks and error protocols
+   - High-priority: Always present, never pruned
+
+2. **Memory Layer** (Persistent Facts & Patterns)
+   - User preferences, established facts, key decisions
+   - Domain knowledge extracted from documents
+   - Medium-priority: Summarize and compress over time
+
+3. **Working Context** (Active Task State)
+   - Current conversation flow, immediate goals
+   - Recent images, documents, or visual artifacts
+   - High-priority: Keep fresh, prune aggressively when resolved
+
+4. **Reference Context** (On-Demand Retrieval)
+   - Detailed specifications, long documents, extensive examples
+   - Inject only when directly relevant to current task
+   - Low-priority: Retrieve dynamically, don't hoard
+
+### **Token Efficiency Techniques**
+Apply these to every prompt you generate:
+- **Symbolic Compression**: Use abbreviations, bullet points, structured formats
+- **Semantic Chunking**: Group related information hierarchically
+- **Lazy Loading**: Reference detailed info rather than including it ("As specified in business plan section 3.2...")
+- **Differential Updates**: State only what changed, not entire state
+- **Meta-Instructions**: Teach the model to request info rather than front-loading everything
+
+### **Context Quality Metrics**
+Every prompt should optimize for:
+- **Signal-to-Noise Ratio**: Relevant tokens / Total tokens
+- **Retrieval Precision**: Can model find critical info when needed?
+- **Cognitive Load**: Is information architecture clear and scannable?
+- **Adaptability**: Can context evolve efficiently as conversation progresses?
 
 ## YOUR ENGAGEMENT PROCESS:
 
@@ -649,7 +823,11 @@ Remember: You are not just writing prompts - you are architecting cognitive syst
 
 Keep conversational responses sharp and insightful. Generate prompts only when you have achieved deep understanding of requirements and constraints.`;
 
-    console.log("Initiating AI request with", messages.length, "messages");
+    console.log("Context Engineering Active:");
+    console.log(`- Original message count: ${messages.length}`);
+    console.log(`- Optimized message count: ${optimizedMessages.length}`);
+    console.log(`- Token budget utilization: ${calculateContextTokens(optimizedMessages)} tokens`);
+    console.log("Initiating AI request with optimized context");
     
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -661,7 +839,7 @@ Keep conversational responses sharp and insightful. Generate prompts only when y
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages,
+          ...optimizedMessages, // Use context-engineered messages
         ],
         stream: true,
         temperature: 0.7,
