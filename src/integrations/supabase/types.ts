@@ -14,7 +14,224 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      knowledge_bases: {
+        Row: {
+          content: string
+          created_at: string | null
+          description: string | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      prompt_evaluations: {
+        Row: {
+          clarity_score: number | null
+          completeness_score: number | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          prompt_id: string | null
+          quality_score: number | null
+          test_results: Json | null
+          token_efficiency: number | null
+          user_id: string | null
+        }
+        Insert: {
+          clarity_score?: number | null
+          completeness_score?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          prompt_id?: string | null
+          quality_score?: number | null
+          test_results?: Json | null
+          token_efficiency?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          clarity_score?: number | null
+          completeness_score?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          prompt_id?: string | null
+          quality_score?: number | null
+          test_results?: Json | null
+          token_efficiency?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_evaluations_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_library: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_favorite: boolean | null
+          model_recommendation: string | null
+          performance_score: number | null
+          tags: string[] | null
+          title: string
+          token_count: number | null
+          updated_at: string | null
+          usage_count: number | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          model_recommendation?: string | null
+          performance_score?: number | null
+          tags?: string[] | null
+          title: string
+          token_count?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          model_recommendation?: string | null
+          performance_score?: number | null
+          tags?: string[] | null
+          title?: string
+          token_count?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      prompt_templates: {
+        Row: {
+          category: string
+          content: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          industry: string | null
+          is_public: boolean | null
+          name: string
+          rating: number | null
+          usage_count: number | null
+          variables: Json | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          industry?: string | null
+          is_public?: boolean | null
+          name: string
+          rating?: number | null
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          industry?: string | null
+          is_public?: boolean | null
+          name?: string
+          rating?: number | null
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Relationships: []
+      }
+      prompt_workflows: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          steps: Json
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          steps: Json
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          steps?: Json
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
