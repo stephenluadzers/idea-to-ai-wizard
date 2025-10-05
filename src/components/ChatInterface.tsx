@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Copy, Download, Sparkles, Loader2, FileUp } from "lucide-react";
+import { Send, Copy, Download, Sparkles, Loader2, FileUp, Save, Layers } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FileUploadManager, UploadedFile } from "./FileUploadManager";
+import { SavePromptDialog } from "./SavePromptDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Message {
@@ -19,8 +20,23 @@ export const ChatInterface = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [isCompareMode, setIsCompareMode] = useState(false);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Load template from sessionStorage if available
+  useEffect(() => {
+    const templateContent = sessionStorage.getItem("templateContent");
+    if (templateContent) {
+      setInput(templateContent);
+      sessionStorage.removeItem("templateContent");
+      toast({
+        title: "Template Loaded",
+        description: "Template content has been loaded. You can edit and use it.",
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -195,6 +211,35 @@ export const ChatInterface = () => {
     }
   };
 
+  const getLastPromptContent = (): string => {
+    const lastAssistantMessage = messages
+      .slice()
+      .reverse()
+      .find((m) => m.role === "assistant");
+    if (lastAssistantMessage) {
+      return typeof lastAssistantMessage.content === "string" 
+        ? lastAssistantMessage.content 
+        : lastAssistantMessage.content.find(part => part.type === "text")?.text || "";
+    }
+    return "";
+  };
+
+  const handleCompareMode = () => {
+    if (!input.trim()) {
+      toast({
+        title: "Enter a prompt",
+        description: "Please enter your prompt request to generate 3 variations",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const enhancedInput = `${input}\n\n**COMPARISON MODE**: Generate 3 distinct variations of this prompt with different approaches or styles. Label them as "Variation 1:", "Variation 2:", and "Variation 3:".`;
+    streamChat(enhancedInput);
+    setInput("");
+    setIsCompareMode(false);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 p-6" ref={scrollRef}>
@@ -288,6 +333,15 @@ export const ChatInterface = () => {
               <Button
                 variant="secondary"
                 size="sm"
+                onClick={() => setIsSaveDialogOpen(true)}
+                disabled={isLoading || !getLastPromptContent()}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save to Library
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={downloadLastPrompt}
                 disabled={isLoading}
               >
@@ -307,6 +361,18 @@ export const ChatInterface = () => {
                 className="min-h-[80px] bg-secondary border-border/50 resize-none"
                 disabled={isLoading}
               />
+              {input.trim() && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCompareMode}
+                  disabled={isLoading}
+                  className="w-full"
+                >
+                  <Layers className="w-4 h-4 mr-2" />
+                  Generate 3 Variations (Comparison Mode)
+                </Button>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
@@ -351,6 +417,12 @@ export const ChatInterface = () => {
           </div>
         </div>
       </div>
+
+      <SavePromptDialog
+        open={isSaveDialogOpen}
+        onOpenChange={setIsSaveDialogOpen}
+        content={getLastPromptContent()}
+      />
     </div>
   );
 };
