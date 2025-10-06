@@ -8,12 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, Trash2, Eye } from "lucide-react";
+import { Plus, FileText, Trash2, Eye, Upload } from "lucide-react";
 import { toast } from "sonner";
+import Papa from "papaparse";
 
 export default function Knowledge() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [viewContent, setViewContent] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileContent, setFileContent] = useState<string>("");
+  const [isProcessing, setIsProcessing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: knowledgeBases, isLoading } = useQuery({
@@ -63,15 +67,74 @@ export default function Knowledge() {
     },
   });
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    setIsProcessing(true);
+
+    try {
+      const fileType = file.type;
+      const fileName = file.name.toLowerCase();
+
+      // Handle CSV files
+      if (fileType === "text/csv" || fileName.endsWith(".csv")) {
+        const text = await file.text();
+        Papa.parse(text, {
+          complete: (results) => {
+            const content = results.data
+              .map((row: any) => (Array.isArray(row) ? row.join(", ") : ""))
+              .join("\n");
+            setFileContent(content);
+            toast.success("CSV file processed");
+          },
+          error: () => {
+            toast.error("Error parsing CSV file");
+          },
+        });
+      }
+      // Handle plain text files
+      else if (fileType === "text/plain" || fileName.endsWith(".txt")) {
+        const text = await file.text();
+        setFileContent(text);
+        toast.success("Text file loaded");
+      }
+      // Handle JSON files
+      else if (fileType === "application/json" || fileName.endsWith(".json")) {
+        const text = await file.text();
+        setFileContent(text);
+        toast.success("JSON file loaded");
+      }
+      // For other document types, show message
+      else {
+        toast.info("For PDF, DOCX, XLSX files, please copy and paste the content manually or export as CSV/TXT first");
+        setSelectedFile(null);
+      }
+    } catch (error) {
+      console.error("Error processing file:", error);
+      toast.error("Error processing file");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const content = fileContent || (formData.get("content") as string);
+    
+    if (!content) {
+      toast.error("Please provide content or upload a file");
+      return;
+    }
+
     createMutation.mutate({
       name: formData.get("name"),
       description: formData.get("description"),
-      content: formData.get("content"),
-      file_type: "text",
-      file_size: (formData.get("content") as string).length,
+      content: content,
+      file_type: selectedFile ? selectedFile.type : "text",
+      file_size: content.length,
     });
   };
 
@@ -115,21 +178,55 @@ export default function Knowledge() {
                   placeholder="Brief description of this knowledge"
                 />
               </div>
+              
+              <div className="space-y-2">
+                <Label>Upload Document</Label>
+                <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
+                  <Input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    accept=".txt,.csv,.json,.pdf,.doc,.docx,.xls,.xlsx"
+                    onChange={handleFileSelect}
+                    disabled={isProcessing}
+                  />
+                  <Label htmlFor="file-upload" className="cursor-pointer">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      {isProcessing ? "Processing..." : "Click to upload or drag and drop"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      CSV, TXT, JSON (PDF/DOCX: export to CSV/TXT first)
+                    </p>
+                  </Label>
+                  {selectedFile && (
+                    <p className="text-sm mt-2 text-primary">{selectedFile.name}</p>
+                  )}
+                </div>
+              </div>
+
               <div>
-                <Label htmlFor="content">Content</Label>
+                <Label htmlFor="content">Content (or paste directly)</Label>
                 <Textarea
                   id="content"
                   name="content"
-                  placeholder="Paste your knowledge content here..."
+                  value={fileContent}
+                  onChange={(e) => setFileContent(e.target.value)}
+                  placeholder="Paste your knowledge content here or upload a file above..."
                   className="min-h-[200px]"
-                  required
                 />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => {
+                  setIsAddDialogOpen(false);
+                  setSelectedFile(null);
+                  setFileContent("");
+                }}>
                   Cancel
                 </Button>
-                <Button type="submit">Add Knowledge Base</Button>
+                <Button type="submit" disabled={isProcessing}>
+                  Add Knowledge Base
+                </Button>
               </div>
             </form>
           </DialogContent>
