@@ -12,6 +12,7 @@ import Knowledge from "./pages/Knowledge";
 import Workflows from "./pages/Workflows";
 import Sandbox from "./pages/Sandbox";
 import Analytics from "./pages/Analytics";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,16 +32,17 @@ const App = () => (
                 <h1 className="ml-4 font-semibold">Prompt Engineering Suite</h1>
               </header>
               <main className="flex-1">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/library" element={<Library />} />
-                  <Route path="/templates" element={<Templates />} />
-                  <Route path="/knowledge" element={<Knowledge />} />
-                  <Route path="/workflows" element={<Workflows />} />
-                  <Route path="/sandbox" element={<Sandbox />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/" element={<Index />} />
+          <Route path="/library" element={<Library />} />
+          <Route path="/templates" element={<Templates />} />
+          <Route path="/knowledge" element={<Knowledge />} />
+          <Route path="/workflows" element={<Workflows />} />
+          <Route path="/sandbox" element={<Sandbox />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
               </main>
             </div>
           </div>

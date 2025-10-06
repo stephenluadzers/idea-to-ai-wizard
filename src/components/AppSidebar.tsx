@@ -18,8 +18,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { UserMenu } from "./UserMenu";
 
 const navItems = [
   { title: "Prompt Designer", url: "/", icon: Sparkles },
@@ -67,6 +69,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="p-4">
+        <UserMenu />
+      </SidebarFooter>
     </Sidebar>
   );
 }
