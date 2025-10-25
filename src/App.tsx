@@ -12,6 +12,7 @@ import Workflows from "./pages/Workflows";
 import Sandbox from "./pages/Sandbox";
 import Analytics from "./pages/Analytics";
 import Auth from "./pages/Auth";
+import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/workflows" element={<Workflows />} />
             <Route path="/sandbox" element={<Sandbox />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/history" element={<History />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

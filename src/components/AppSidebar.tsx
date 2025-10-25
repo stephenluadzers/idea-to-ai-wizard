@@ -7,7 +7,8 @@ import {
   Database, 
   GitBranch, 
   TestTube, 
-  Sparkles 
+  Sparkles,
+  MessageSquare 
 } from "lucide-react";
 import {
   Sidebar,
@@ -26,6 +27,7 @@ import { UserMenu } from "./UserMenu";
 const navItems = [
   { title: "Prompt Designer", url: "/", icon: Sparkles },
   { title: "Library", url: "/library", icon: Library },
+  { title: "Chat History", url: "/history", icon: MessageSquare },
   { title: "Templates", url: "/templates", icon: LayoutTemplate },
   { title: "Knowledge Base", url: "/knowledge", icon: Database },
   { title: "Workflows", url: "/workflows", icon: GitBranch },

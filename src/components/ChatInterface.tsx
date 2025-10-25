@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FileUploadManager, UploadedFile } from "./FileUploadManager";
 import { SavePromptDialog } from "./SavePromptDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   role: "user" | "assistant";
@@ -22,10 +23,11 @@ export const ChatInterface = () => {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [isCompareMode, setIsCompareMode] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load template from sessionStorage if available
+  // Load template or conversation from sessionStorage if available
   useEffect(() => {
     const templateContent = sessionStorage.getItem("templateContent");
     if (templateContent) {
@@ -36,7 +38,87 @@ export const ChatInterface = () => {
         description: "Template content has been loaded. You can edit and use it.",
       });
     }
+
+    const conversationId = sessionStorage.getItem("loadConversationId");
+    if (conversationId) {
+      loadConversation(conversationId);
+      sessionStorage.removeItem("loadConversationId");
+    }
   }, []);
+
+  const loadConversation = async (conversationId: string) => {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Error loading conversation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load conversation",
+        variant: "destructive",
+      });
+    } else if (data) {
+      const loadedMessages: Message[] = data.map((msg) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      }));
+      setMessages(loadedMessages);
+      setCurrentConversationId(conversationId);
+      toast({
+        title: "Loaded",
+        description: "Conversation loaded successfully",
+      });
+    }
+  };
+
+  const saveMessageToDb = async (role: string, content: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Create new conversation if needed
+    if (!currentConversationId) {
+      const { data: convData, error: convError } = await supabase
+        .from("conversations")
+        .insert({
+          user_id: user.id,
+          title: content.substring(0, 50) + (content.length > 50 ? "..." : ""),
+        })
+        .select()
+        .single();
+
+      if (convError) {
+        console.error("Error creating conversation:", convError);
+        return;
+      }
+
+      setCurrentConversationId(convData.id);
+
+      // Save message
+      await supabase.from("messages").insert({
+        conversation_id: convData.id,
+        user_id: user.id,
+        role,
+        content,
+      });
+    } else {
+      // Save to existing conversation
+      await supabase.from("messages").insert({
+        conversation_id: currentConversationId,
+        user_id: user.id,
+        role,
+        content,
+      });
+
+      // Update conversation's updated_at
+      await supabase
+        .from("conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", currentConversationId);
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -81,6 +163,12 @@ export const ChatInterface = () => {
     setIsLoading(true);
     setUploadedFiles([]); // Clear files after sending
     setIsUploadDialogOpen(false);
+
+    // Save user message to database
+    const contentText = typeof messageContent === "string" 
+      ? messageContent 
+      : messageContent.find(part => part.type === "text")?.text || "";
+    await saveMessageToDb("user", contentText);
 
     try {
       const response = await fetch(
@@ -145,6 +233,11 @@ export const ChatInterface = () => {
             break;
           }
         }
+      }
+
+      // Save assistant's final message to database
+      if (assistantContent) {
+        await saveMessageToDb("assistant", assistantContent);
       }
     } catch (error) {
       console.error("Chat error:", error);
