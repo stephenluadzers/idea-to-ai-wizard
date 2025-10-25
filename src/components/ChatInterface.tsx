@@ -15,7 +15,17 @@ interface Message {
   content: string | Array<{ type: "text" | "image_url" | "document"; text?: string; image_url?: { url: string }; document?: { name: string; url: string; type: string } }>;
 }
 
-export const ChatInterface = () => {
+interface ChatInterfaceProps {
+  currentConversationId: string | null;
+  onConversationCreated?: (id: string) => void;
+  onNewChat?: () => void;
+}
+
+export const ChatInterface = ({ 
+  currentConversationId: externalConversationId, 
+  onConversationCreated,
+  onNewChat 
+}: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -23,11 +33,11 @@ export const ChatInterface = () => {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [isCompareMode, setIsCompareMode] = useState(false);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(externalConversationId);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load template or conversation from sessionStorage if available
+  // Load template from sessionStorage if available
   useEffect(() => {
     const templateContent = sessionStorage.getItem("templateContent");
     if (templateContent) {
@@ -38,13 +48,18 @@ export const ChatInterface = () => {
         description: "Template content has been loaded. You can edit and use it.",
       });
     }
-
-    const conversationId = sessionStorage.getItem("loadConversationId");
-    if (conversationId) {
-      loadConversation(conversationId);
-      sessionStorage.removeItem("loadConversationId");
-    }
   }, []);
+
+  // Load conversation when external ID changes
+  useEffect(() => {
+    if (externalConversationId) {
+      loadConversation(externalConversationId);
+    } else {
+      // New chat
+      setMessages([]);
+      setCurrentConversationId(null);
+    }
+  }, [externalConversationId]);
 
   const loadConversation = async (conversationId: string) => {
     const { data, error } = await supabase
@@ -95,6 +110,7 @@ export const ChatInterface = () => {
       }
 
       setCurrentConversationId(convData.id);
+      onConversationCreated?.(convData.id);
 
       // Save message
       await supabase.from("messages").insert({

@@ -1,7 +1,30 @@
+import { useState, useEffect } from "react";
 import { ChatInterface } from "@/components/ChatInterface";
+import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { Brain } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 const Index = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(
+    searchParams.get("conversation")
+  );
+
+  useEffect(() => {
+    const conversationParam = searchParams.get("conversation");
+    setCurrentConversationId(conversationParam);
+  }, [searchParams]);
+
+  const handleSelectConversation = (id: string) => {
+    setSearchParams({ conversation: id });
+    setCurrentConversationId(id);
+  };
+
+  const handleNewChat = () => {
+    setSearchParams({});
+    setCurrentConversationId(null);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -20,9 +43,20 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Chat Interface */}
-      <div className="flex-1 flex flex-col">
-        <ChatInterface />
+      {/* Chat Interface with Sidebar */}
+      <div className="flex-1 flex">
+        <ConversationSidebar
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewChat={handleNewChat}
+        />
+        <div className="flex-1 flex flex-col">
+          <ChatInterface 
+            currentConversationId={currentConversationId}
+            onConversationCreated={setCurrentConversationId}
+            onNewChat={handleNewChat}
+          />
+        </div>
       </div>
     </div>
   );

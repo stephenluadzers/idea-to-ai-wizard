@@ -5,8 +5,7 @@ export default function History() {
   const navigate = useNavigate();
 
   const handleSelectConversation = (conversationId: string) => {
-    sessionStorage.setItem("loadConversationId", conversationId);
-    navigate("/");
+    navigate(`/?conversation=${conversationId}`);
   };
 
   return (
