@@ -60,7 +60,6 @@ export default function Auth() {
                 input: "w-full",
               },
             }}
-            providers={["google"]}
             redirectTo={`${window.location.origin}/`}
           />
         </div>
