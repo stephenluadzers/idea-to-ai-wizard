@@ -1,58 +1,15 @@
-import { useState, useEffect } from "react";
 import { ChatInterface } from "@/components/ChatInterface";
-import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { Brain } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useOutletContext } from "react-router-dom";
+
+interface OutletContext {
+  currentConversationId: string | null;
+  setCurrentConversationId: (id: string | null) => void;
+  handleNewChat: () => void;
+}
 
 const Index = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(
-    searchParams.get("conversation")
-  );
-
-  useEffect(() => {
-    const conversationParam = searchParams.get("conversation");
-    setCurrentConversationId(conversationParam);
-  }, [searchParams]);
-
-  // Auto-create new conversation if none exists
-  useEffect(() => {
-    const autoCreateConversation = async () => {
-      const conversationParam = searchParams.get("conversation");
-      if (!conversationParam) {
-        // Automatically create a new conversation
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data, error } = await supabase
-          .from("conversations")
-          .insert({
-            user_id: user.id,
-            title: "New Chat",
-          })
-          .select()
-          .single();
-
-        if (!error && data) {
-          setSearchParams({ conversation: data.id });
-          setCurrentConversationId(data.id);
-        }
-      }
-    };
-
-    autoCreateConversation();
-  }, []); // Only run once on mount
-
-  const handleSelectConversation = (id: string) => {
-    setSearchParams({ conversation: id });
-    setCurrentConversationId(id);
-  };
-
-  const handleNewChat = () => {
-    setSearchParams({});
-    setCurrentConversationId(null);
-  };
+  const { currentConversationId, setCurrentConversationId, handleNewChat } = useOutletContext<OutletContext>();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -72,20 +29,13 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Chat Interface with Sidebar */}
-      <div className="flex-1 flex">
-        <ConversationSidebar
+      {/* Chat Interface */}
+      <div className="flex-1 flex flex-col">
+        <ChatInterface 
           currentConversationId={currentConversationId}
-          onSelectConversation={handleSelectConversation}
+          onConversationCreated={setCurrentConversationId}
           onNewChat={handleNewChat}
         />
-        <div className="flex-1 flex flex-col">
-          <ChatInterface 
-            currentConversationId={currentConversationId}
-            onConversationCreated={setCurrentConversationId}
-            onNewChat={handleNewChat}
-          />
-        </div>
       </div>
     </div>
   );
