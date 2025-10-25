@@ -3,6 +3,7 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { ConversationSidebar } from "@/components/ConversationSidebar";
 import { Brain } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -14,6 +15,34 @@ const Index = () => {
     const conversationParam = searchParams.get("conversation");
     setCurrentConversationId(conversationParam);
   }, [searchParams]);
+
+  // Auto-create new conversation if none exists
+  useEffect(() => {
+    const autoCreateConversation = async () => {
+      const conversationParam = searchParams.get("conversation");
+      if (!conversationParam) {
+        // Automatically create a new conversation
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from("conversations")
+          .insert({
+            user_id: user.id,
+            title: "New Chat",
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          setSearchParams({ conversation: data.id });
+          setCurrentConversationId(data.id);
+        }
+      }
+    };
+
+    autoCreateConversation();
+  }, []); // Only run once on mount
 
   const handleSelectConversation = (id: string) => {
     setSearchParams({ conversation: id });
