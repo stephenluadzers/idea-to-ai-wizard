@@ -26,6 +26,7 @@ import { UserMenu } from "./UserMenu";
 
 const navItems = [
   { title: "Prompt Designer", url: "/", icon: Sparkles },
+  { title: "Master Prompts", url: "/master-prompts", icon: BookOpen },
   { title: "Library", url: "/library", icon: Library },
   { title: "Chat History", url: "/history", icon: MessageSquare },
   { title: "Templates", url: "/templates", icon: LayoutTemplate },

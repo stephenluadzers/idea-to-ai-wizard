@@ -60,6 +60,9 @@ verify_jwt = false
 [functions.generate-prompt]
 verify_jwt = false
 
+[functions.generate-enhanced-prompt]
+verify_jwt = true
+
 [functions.text-to-speech]
 verify_jwt = false
 

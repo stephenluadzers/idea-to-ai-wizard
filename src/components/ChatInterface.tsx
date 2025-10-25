@@ -188,14 +188,17 @@ export const ChatInterface = ({
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prompt`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-enhanced-prompt`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ messages: newMessages }),
+          body: JSON.stringify({ 
+            userInput: contentText,
+            systemContext: uploadedFiles.length > 0 ? "User has attached files for context" : undefined
+          }),
         }
       );
 

@@ -1,92 +1,70 @@
-import { useState } from "react";
+import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Brain } from "lucide-react";
 
 export default function Auth() {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast.success("Account created! Please sign in.");
-        setIsSignUp(false);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast.success("Signed in successfully!");
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
         navigate("/");
       }
-    } catch (error: any) {
-      toast.error(error.message || "Authentication failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        navigate("/");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8">
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          {isSignUp ? "Create Account" : "Sign In"}
-        </h1>
-        <form onSubmit={handleAuth} className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-            />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <Brain className="w-10 h-10 text-primary" />
+            <h1 className="text-3xl font-bold text-foreground">
+              AI Assistant Designer
+            </h1>
           </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
-          </Button>
-        </form>
-        <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-muted-foreground hover:text-primary"
-          >
-            {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
-          </button>
+          <p className="text-muted-foreground">
+            Sign in to create powerful AI assistants
+          </p>
         </div>
-      </Card>
+        
+        <div className="bg-card border border-border rounded-lg p-6 shadow-lg">
+          <SupabaseAuth
+            supabaseClient={supabase}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: "hsl(var(--primary))",
+                    brandAccent: "hsl(var(--primary))",
+                  },
+                },
+              },
+              className: {
+                container: "w-full",
+                button: "w-full",
+                input: "w-full",
+              },
+            }}
+            providers={["google"]}
+            redirectTo={window.location.origin}
+          />
+        </div>
+      </div>
     </div>
   );
 }

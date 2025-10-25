@@ -1,8 +1,42 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export function Layout() {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is authenticated
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
