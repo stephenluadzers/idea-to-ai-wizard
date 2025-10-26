@@ -1,4 +1,5 @@
 import { ChatInterface } from "@/components/ChatInterface";
+import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { Brain } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 
@@ -26,6 +27,11 @@ const Index = () => {
           <p className="text-lg text-primary-foreground/80 max-w-2xl mx-auto">
             Chat with me to create comprehensive, structured AI assistant prompts using the "Thinker Doer" methodology.
           </p>
+          
+          {/* Subscription Banner */}
+          <div className="mt-6 max-w-2xl mx-auto">
+            <SubscriptionBanner />
+          </div>
         </div>
       </div>
 
