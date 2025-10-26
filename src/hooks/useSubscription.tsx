@@ -50,27 +50,18 @@ export const useSubscription = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        window.open(data.url, "_blank");
-        
-        // Check subscription status after a delay
-        setTimeout(() => {
-          checkSubscription();
-        }, 3000);
-      }
+      // Open Stripe payment link directly
+      window.open("https://buy.stripe.com/8x25kDaJs2Db9qd5A4fbq03", "_blank");
+      
+      // Check subscription status after a delay
+      setTimeout(() => {
+        checkSubscription();
+      }, 3000);
     } catch (error) {
       console.error("Error creating checkout:", error);
       toast({
         title: "Error",
-        description: "Failed to create checkout session",
+        description: "Failed to open checkout",
         variant: "destructive",
       });
     }
