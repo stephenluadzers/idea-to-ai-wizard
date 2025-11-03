@@ -187,14 +187,18 @@ export const ChatInterface = ({
     await saveMessageToDb("user", contentText);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error("Session error:", sessionError);
         toast({
-          title: "Authentication required",
-          description: "Please sign in to use this feature",
+          title: "Authentication Error",
+          description: "Your session has expired. Redirecting to sign in...",
           variant: "destructive",
         });
         setIsLoading(false);
+        // Redirect to auth page
+        window.location.href = "/auth";
         return;
       }
 
@@ -213,8 +217,25 @@ export const ChatInterface = ({
         }
       );
 
-      if (!response.ok || !response.body) {
-        throw new Error("Failed to start stream");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        
+        if (response.status === 401 || response.status === 403) {
+          toast({
+            title: "Authentication Error",
+            description: "Your session is invalid. Please sign in again.",
+            variant: "destructive",
+          });
+          setTimeout(() => window.location.href = "/auth", 1500);
+          setIsLoading(false);
+          return;
+        }
+        
+        throw new Error(errorData.error || "Failed to start stream");
+      }
+      
+      if (!response.body) {
+        throw new Error("No response body received");
       }
 
       const reader = response.body.getReader();
