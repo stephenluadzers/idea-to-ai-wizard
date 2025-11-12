@@ -188,52 +188,66 @@ export const ChatInterface = ({
 
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
+      let accessToken = session?.access_token || null;
+
+      // Try to refresh session if missing/errored
+      if (sessionError || !accessToken) {
         console.error("Session error:", sessionError);
-        toast({
-          title: "Authentication Error",
-          description: "Your session has expired. Redirecting to sign in...",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        // Redirect to auth page
-        window.location.href = "/auth";
-        return;
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        accessToken = refreshData?.session?.access_token || null;
+        if (refreshError || !accessToken) {
+          toast({
+            title: "Authentication Error",
+            description: "Your session has expired. Redirecting to sign in...",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          window.location.href = "/auth";
+          return;
+        }
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-enhanced-prompt`,
-        {
+      const makeRequest = async (token: string) =>
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-enhanced-prompt`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             userInput: contentText,
-            systemContext: uploadedFiles.length > 0 ? "User has attached files for context" : undefined
+            systemContext: uploadedFiles.length > 0 ? "User has attached files for context" : undefined,
           }),
+        });
+
+      let response = await makeRequest(accessToken!);
+
+      // On auth failure, refresh once and retry
+      if (response.status === 401 || response.status === 403) {
+        const { data: refreshData2 } = await supabase.auth.refreshSession();
+        const newToken = refreshData2?.session?.access_token;
+        if (newToken) {
+          response = await makeRequest(newToken);
         }
-      );
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        
+
         if (response.status === 401 || response.status === 403) {
           toast({
             title: "Authentication Error",
             description: "Your session is invalid. Please sign in again.",
             variant: "destructive",
           });
-          setTimeout(() => window.location.href = "/auth", 1500);
+          setTimeout(() => (window.location.href = "/auth"), 1500);
           setIsLoading(false);
           return;
         }
-        
+
         throw new Error(errorData.error || "Failed to start stream");
       }
-      
+
       if (!response.body) {
         throw new Error("No response body received");
       }
@@ -294,7 +308,7 @@ export const ChatInterface = ({
       console.error("Chat error:", error);
       toast({
         title: "Error",
-        description: "Failed to generate response. Please try again.",
+        description: "Failed to generate prompt. Please try again.",
         variant: "destructive",
       });
     } finally {
