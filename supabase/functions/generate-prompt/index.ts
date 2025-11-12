@@ -298,6 +298,31 @@ Include examples of desired style
 Use when: AI needs to understand user intent, emotions, or unstated needs
 Format: "Consider the user's likely intent, knowledge level, and needs. Explain as if to [audience type]"
 
+### 12. HERMENEUTIC PROMPTING (Iterative interpretation cycle)
+Use when: Complex interpretation tasks requiring deep contextual understanding
+Concept: Based on the hermeneutic circle - understanding evolves through cycles of examining parts and wholes
+Format: "Interpret this iteratively:
+1. Initial Reading: Form preliminary understanding
+2. Contextual Analysis: Examine historical, cultural, situational context
+3. Part-to-Whole: Analyze components, then synthesize into coherent whole
+4. Revision Cycle: Refine interpretation based on emerging insights
+5. Final Synthesis: Integrate all layers of understanding"
+
+Best for:
+- Textual analysis and literary interpretation
+- Understanding complex policies or legal documents
+- Analyzing user feedback with cultural/situational nuances
+- Interpreting ambiguous requirements or specifications
+- Cross-cultural communication and translation tasks
+
+Example structure:
+"Analyze [text/document] using hermeneutic interpretation:
+- First pass: What is the surface meaning?
+- Context layer: What historical/cultural context influences this?
+- Deep analysis: How do the parts relate to the whole?
+- Revision: How does new understanding change initial interpretation?
+- Synthesis: What is the refined, contextually-aware interpretation?"
+
 ## ADVANCED PROMPTING ENHANCEMENTS:
 
 ### Meta-Prompting Layers
