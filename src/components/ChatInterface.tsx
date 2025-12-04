@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Copy, Download, Sparkles, Loader2, FileUp, Save, Layers } from "lucide-react";
+import { Send, Copy, Download, Sparkles, Loader2, FileUp, Save, Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FileUploadManager, UploadedFile } from "./FileUploadManager";
 import { SavePromptDialog } from "./SavePromptDialog";
@@ -34,6 +34,7 @@ export const ChatInterface = ({
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(externalConversationId);
+  const [selectedPromptIndex, setSelectedPromptIndex] = useState<number | null>(null);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -382,6 +383,48 @@ export const ChatInterface = ({
     return "";
   };
 
+  // Get all assistant prompts for navigation
+  const assistantPrompts = messages
+    .map((m, idx) => ({ message: m, originalIndex: idx }))
+    .filter((item) => item.message.role === "assistant");
+
+  const getPromptContent = (message: Message): string => {
+    return typeof message.content === "string"
+      ? message.content
+      : message.content.find((part) => part.type === "text")?.text || "";
+  };
+
+  const copyPromptAtIndex = (idx: number) => {
+    const prompt = assistantPrompts[idx];
+    if (prompt) {
+      navigator.clipboard.writeText(getPromptContent(prompt.message));
+      toast({
+        title: "Copied!",
+        description: `Prompt ${idx + 1} copied to clipboard.`,
+      });
+    }
+  };
+
+  const navigatePrompt = (direction: "prev" | "next") => {
+    if (assistantPrompts.length === 0) return;
+    if (selectedPromptIndex === null) {
+      setSelectedPromptIndex(assistantPrompts.length - 1);
+      return;
+    }
+    if (direction === "prev" && selectedPromptIndex > 0) {
+      setSelectedPromptIndex(selectedPromptIndex - 1);
+    } else if (direction === "next" && selectedPromptIndex < assistantPrompts.length - 1) {
+      setSelectedPromptIndex(selectedPromptIndex + 1);
+    }
+  };
+
+  // Reset selected prompt index when new prompt is generated
+  useEffect(() => {
+    if (assistantPrompts.length > 0) {
+      setSelectedPromptIndex(assistantPrompts.length - 1);
+    }
+  }, [assistantPrompts.length]);
+
   const handleCompareMode = () => {
     if (!input.trim()) {
       toast({
@@ -477,35 +520,60 @@ export const ChatInterface = ({
 
       <div className="border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-4xl mx-auto p-4 space-y-3">
-          {messages.length > 0 && (
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={copyLastPrompt}
-                disabled={isLoading}
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                Copy Last Prompt
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsSaveDialogOpen(true)}
-                disabled={isLoading || !getLastPromptContent()}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save to Library
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={downloadLastPrompt}
-                disabled={isLoading}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
+          {messages.length > 0 && assistantPrompts.length > 0 && (
+            <div className="flex gap-2 items-center justify-between">
+              {/* Prompt Navigator */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigatePrompt("prev")}
+                  disabled={isLoading || selectedPromptIndex === null || selectedPromptIndex === 0}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground min-w-[80px] text-center">
+                  Prompt {selectedPromptIndex !== null ? selectedPromptIndex + 1 : "-"} / {assistantPrompts.length}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigatePrompt("next")}
+                  disabled={isLoading || selectedPromptIndex === null || selectedPromptIndex === assistantPrompts.length - 1}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => selectedPromptIndex !== null && copyPromptAtIndex(selectedPromptIndex)}
+                  disabled={isLoading || selectedPromptIndex === null}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Prompt {selectedPromptIndex !== null ? selectedPromptIndex + 1 : ""}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsSaveDialogOpen(true)}
+                  disabled={isLoading || !getLastPromptContent()}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save to Library
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={downloadLastPrompt}
+                  disabled={isLoading}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              </div>
             </div>
           )}
 
