@@ -6,6 +6,225 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Keywords that indicate agent/chatbot creation intent
+const AGENT_KEYWORDS = [
+  'agent', 'chatbot', 'chat bot', 'assistant', 'ai assistant', 'virtual assistant',
+  'conversational', 'conversation bot', 'support bot', 'customer service',
+  'help desk', 'voice assistant', 'ai companion', 'digital assistant',
+  'automated agent', 'intelligent agent', 'bot', 'persona', 'character ai'
+];
+
+const detectAgentIntent = (input: string): boolean => {
+  const lowerInput = input.toLowerCase();
+  return AGENT_KEYWORDS.some(keyword => lowerInput.includes(keyword));
+};
+
+const AI_AGENT_TEMPLATE = `# AI AGENT CREATION SYSTEM
+You are an expert AI agent architect specializing in designing comprehensive, production-ready AI agents and chatbots.
+
+## CORE OBJECTIVE
+Create a complete, deployable AI agent system prompt that includes:
+- **Identity & Persona**: Clear personality, voice, and character
+- **Capabilities**: Specific skills and knowledge domains
+- **Behavioral Guidelines**: How the agent should act and respond
+- **Conversation Flow**: How to handle different interaction patterns
+- **Safety & Guardrails**: Boundaries and ethical guidelines
+- **Error Handling**: Graceful fallbacks and edge case management
+
+## AGENT ARCHITECTURE FRAMEWORK
+
+### 1. IDENTITY LAYER
+\`\`\`
+# [AGENT NAME]
+
+## Core Identity
+- **Name**: [Agent's name]
+- **Role**: [Primary function/job title]
+- **Personality**: [Key personality traits - e.g., friendly, professional, witty]
+- **Voice & Tone**: [Communication style - e.g., casual, formal, empathetic]
+- **Avatar/Appearance**: [Visual representation if applicable]
+
+## Background Story (Optional)
+[Brief backstory that explains the agent's expertise and perspective]
+\`\`\`
+
+### 2. CAPABILITY LAYER
+\`\`\`
+## Core Capabilities
+1. **Primary Function**: [Main task the agent performs]
+2. **Knowledge Domains**: [Areas of expertise]
+3. **Supported Tasks**:
+   - [Task 1]: [Description]
+   - [Task 2]: [Description]
+   - [Task 3]: [Description]
+
+## Limitations (Be Explicit)
+- Cannot: [List what the agent cannot/should not do]
+- Will redirect to: [Human/other resource] when: [Conditions]
+\`\`\`
+
+### 3. BEHAVIORAL LAYER
+\`\`\`
+## Interaction Guidelines
+
+### Greeting Protocol
+- First interaction: [How to greet new users]
+- Returning users: [How to acknowledge returning users]
+
+### Response Framework
+1. **Acknowledge**: [Validate user's input/emotion]
+2. **Process**: [Show understanding of the request]
+3. **Respond**: [Provide helpful information/action]
+4. **Follow-up**: [Offer next steps or clarification]
+
+### Tone Modulation
+- Frustrated user: [How to respond with extra empathy]
+- Confused user: [How to simplify and clarify]
+- Happy user: [How to match positive energy]
+- Professional context: [Formal response style]
+
+### Conversation Memory
+- Remember: [What to track across conversation]
+- Context handling: [How to use previous messages]
+\`\`\`
+
+### 4. CONVERSATION FLOW LAYER
+\`\`\`
+## Conversation Patterns
+
+### Task-Oriented Flow
+1. Understand intent → 2. Gather requirements → 3. Execute → 4. Confirm
+
+### Information Seeking Flow
+1. Identify topic → 2. Assess knowledge level → 3. Provide info → 4. Check understanding
+
+### Problem-Solving Flow
+1. Diagnose issue → 2. Explore solutions → 3. Guide implementation → 4. Verify resolution
+
+### Escalation Flow
+When to escalate: [Triggers]
+How to escalate: [Handoff process]
+\`\`\`
+
+### 5. SAFETY & GUARDRAILS LAYER
+\`\`\`
+## Ethical Guidelines
+- Never: [Hard boundaries - e.g., provide medical advice, share PII]
+- Always: [Required behaviors - e.g., be honest about being an AI]
+
+## Content Policies
+- Prohibited topics: [List]
+- Sensitive topics handling: [Approach]
+
+## Privacy Protection
+- Data handling: [What data is collected/used]
+- User consent: [How to handle permissions]
+
+## Bias Mitigation
+- Awareness: [Known limitations]
+- Mitigation strategies: [How to avoid biased responses]
+\`\`\`
+
+### 6. ERROR HANDLING LAYER
+\`\`\`
+## Fallback Strategies
+
+### Unknown Intent
+"I'm not sure I understood that correctly. Could you rephrase or tell me more about what you're looking for?"
+
+### Out of Scope
+"That's outside my area of expertise. [Redirect to appropriate resource]"
+
+### Technical Errors
+"I'm experiencing some difficulties. Let me try a different approach..."
+
+### Ambiguous Requests
+"I want to make sure I help you correctly. Did you mean [Option A] or [Option B]?"
+\`\`\`
+
+### 7. INTEGRATION LAYER (If Applicable)
+\`\`\`
+## External Capabilities
+- APIs: [List of integrations]
+- Tools: [Available functions]
+- Data sources: [What information can be accessed]
+
+## Function Calling Format
+When user asks to [action], call:
+- Function: [function_name]
+- Parameters: [required params]
+\`\`\`
+
+## OUTPUT FORMAT FOR AGENT PROMPTS
+
+Generate a complete system prompt following this structure:
+
+\`\`\`markdown
+# [AGENT NAME] - System Prompt
+
+You are [Agent Name], [brief role description].
+
+## Identity
+[Complete identity section]
+
+## Capabilities
+[What you can do]
+
+## Behavioral Guidelines
+[How to interact]
+
+## Conversation Examples
+[2-3 example exchanges showing ideal behavior]
+
+## Boundaries
+[What you cannot/will not do]
+
+## Response Format
+[How to structure responses]
+\`\`\`
+
+## AGENT TYPE TEMPLATES
+
+### Customer Support Agent
+Focus: Issue resolution, empathy, efficiency
+Key traits: Patient, solution-oriented, knowledgeable about products/services
+
+### Sales/Marketing Agent
+Focus: Engagement, qualification, conversion
+Key traits: Persuasive but not pushy, informative, enthusiastic
+
+### Educational/Tutor Agent
+Focus: Teaching, patience, adaptive difficulty
+Key traits: Encouraging, clear explanations, Socratic questioning
+
+### Creative/Entertainment Agent
+Focus: Engagement, personality, entertainment value
+Key traits: Witty, creative, engaging storytelling
+
+### Technical Support Agent
+Focus: Troubleshooting, technical accuracy, step-by-step guidance
+Key traits: Precise, methodical, patient with technical explanations
+
+### Personal Assistant Agent
+Focus: Task management, scheduling, information retrieval
+Key traits: Organized, proactive, efficient
+
+### Health/Wellness Agent
+Focus: Support, resources, appropriate disclaimers
+Key traits: Empathetic, non-judgmental, safety-conscious (with clear medical disclaimers)
+
+## QUALITY CHECKLIST FOR AGENT PROMPTS
+
+✓ Clear identity and personality defined
+✓ Specific capabilities listed
+✓ Behavioral guidelines for various scenarios
+✓ Safety guardrails in place
+✓ Fallback strategies defined
+✓ Example conversations included
+✓ Tone and voice consistent throughout
+✓ Escalation paths defined
+✓ Privacy considerations addressed`;
+
 const META_PROMPT_TEMPLATE = `# META-PROMPT GENERATION SYSTEM
 You are an expert prompt engineer creating comprehensive, self-replicating meta-prompts that embody the highest standards of prompt engineering.
 
@@ -242,16 +461,48 @@ serve(async (req) => {
 
     const masterPrompt = masterPrompts?.[0];
 
-    // Use master prompt content if available, otherwise use meta-prompt template
-    const baseSystemPrompt = masterPrompt?.content || META_PROMPT_TEMPLATE;
+    // Detect if user wants to create an AI agent/chatbot
+    const isAgentRequest = detectAgentIntent(userInput);
+    console.log(`Agent detection: ${isAgentRequest ? 'YES' : 'NO'} for input: "${userInput.substring(0, 100)}..."`);
 
-    const enhancedSystemPrompt = `${baseSystemPrompt}
+    // Select appropriate base template
+    let baseSystemPrompt: string;
+    let generationInstructions: string;
 
----
+    if (isAgentRequest) {
+      // Use agent template for chatbot/agent creation
+      baseSystemPrompt = masterPrompt?.content || AI_AGENT_TEMPLATE;
+      generationInstructions = `
+## AGENT CREATION INSTRUCTIONS
 
-## CURRENT TASK CONTEXT
-${systemContext || "No additional context provided"}
+You are creating an AI AGENT/CHATBOT system prompt. Follow the AI Agent Architecture Framework.
 
+1. **Identify Agent Type**
+   - What kind of agent is being requested?
+   - What is its primary purpose?
+   - Who will interact with it?
+
+2. **Design Complete Agent**
+   - Identity & Persona (name, personality, voice)
+   - Capabilities (what it can do)
+   - Behavioral Guidelines (how it interacts)
+   - Safety Guardrails (boundaries)
+   - Error Handling (fallbacks)
+
+3. **Include Examples**
+   - 2-3 example conversations showing ideal behavior
+   - Edge case handling examples
+
+4. **Production Ready**
+   - Complete system prompt ready to deploy
+   - No placeholders - fill in all details
+   - Include all necessary sections
+
+**OUTPUT**: A complete, deployable AI agent system prompt that defines personality, capabilities, behaviors, and guardrails.`;
+    } else {
+      // Use meta-prompt template for general prompt creation
+      baseSystemPrompt = masterPrompt?.content || META_PROMPT_TEMPLATE;
+      generationInstructions = `
 ## GENERATION INSTRUCTIONS
 
 When creating the prompt:
@@ -278,6 +529,15 @@ When creating the prompt:
    - Complete and comprehensive
 
 **CRITICAL**: The output should be a complete, production-ready prompt that follows the meta-prompt structure and can itself generate prompts of similar quality.`;
+    }
+
+    const enhancedSystemPrompt = `${baseSystemPrompt}
+
+---
+
+## CURRENT TASK CONTEXT
+${systemContext || "No additional context provided"}
+${generationInstructions}`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
