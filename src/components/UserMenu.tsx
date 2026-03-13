@@ -27,6 +27,16 @@ export function UserMenu() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleCopyJWT = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      await navigator.clipboard.writeText(session.access_token);
+      toast.success("JWT copied to clipboard");
+    } else {
+      toast.error("No active session found");
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast.success("Signed out successfully");
