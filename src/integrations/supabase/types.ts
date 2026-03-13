@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_listings: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          creator_id: string
+          description: string | null
+          id: string
+          is_published: boolean | null
+          price_tier: string | null
+          rating: number | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          creator_id: string
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          price_tier?: string | null
+          rating?: number | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          creator_id?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean | null
+          price_tier?: string | null
+          rating?: number | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
