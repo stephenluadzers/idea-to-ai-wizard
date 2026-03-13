@@ -60,6 +60,10 @@ export function UserMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={handleCopyJWT}>
+          <Copy className="h-4 w-4 mr-2" />
+          Copy JWT
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out
