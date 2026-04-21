@@ -304,32 +304,12 @@ Focus on delivering clear, actionable guidance that directly addresses user need
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Framework</Label>
-                <Select value={framework} onValueChange={(v) => setFramework(v as Framework)}>
-                  <SelectTrigger className="bg-secondary border-border/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="thinker-doer">
-                      <div className="flex items-center gap-2">
-                        <Brain className="w-4 h-4" />
-                        Thinker–Doer (default)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="context-engineering">
-                      <div className="flex items-center gap-2">
-                        <Layers className="w-4 h-4" />
-                        Context Engineering (6-part)
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {framework === "context-engineering"
-                    ? "Role · Task · Context · Constraints · Examples · Output Format"
-                    : "Persona-driven role + objective + instructions structure"}
-                </p>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
+                <Layers className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">Context Engineering built in.</span>{" "}
+                  Every generated prompt includes the 6-part structure (Role · Task · Context · Constraints · Examples · Output Format) layered into the Thinker–Doer framework.
+                </div>
               </div>
 
               <div className="space-y-2">
