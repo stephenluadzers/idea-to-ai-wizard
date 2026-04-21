@@ -275,8 +275,8 @@ export const PromptDesigner = () => {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
                 <Layers className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">Context Engineering built in.</span>{" "}
-                  Every generated prompt includes the 6-part structure (Role · Task · Context · Constraints · Examples · Output Format) layered into the Thinker–Doer framework.
+                  <span className="font-medium text-foreground">Ensemble reasoning + Context Engineering.</span>{" "}
+                  Your idea is sent to Gemini 2.5 Pro, GPT-5, and GPT-5.2 in parallel with high reasoning effort, then GPT-5 synthesizes them into one superior prompt — fully structured with the 6-part Context Engineering framework.
                 </div>
               </div>
 
