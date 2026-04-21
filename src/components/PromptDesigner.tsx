@@ -155,7 +155,46 @@ export const PromptDesigner = () => {
         knowledgeBaseSection = `\n\n**Recommended Knowledge Bases:**\n${knowledgeSearch.selectedBases.map(kb => `- [${kb.title}](${kb.url}) - ${kb.description} (${kb.source})`).join('\n')}`;
       }
 
-      const prompt = `# **Role:**
+      const prompt = framework === "context-engineering"
+        ? `# Role
+You are a ${formData.domain || "specialized"} expert assistant. ${formData.idea}
+
+# Task
+Help ${formData.targetAudience || "users"} accomplish their objectives in ${formData.domain || "this domain"} by analyzing their input, applying expert reasoning, and delivering clear, actionable output.
+
+# Context
+- Domain: ${formData.domain || "general"}
+- Audience: ${formData.targetAudience || "general users"}
+- Situation: The user is seeking expert assistance and expects production-quality guidance grounded in best practices.${knowledgeBaseSection}
+
+# Constraints
+- MUST ground recommendations in evidence or stated reasoning
+- MUST ask a clarifying question when input is ambiguous
+- MUST stay strictly within the ${formData.domain || "stated"} domain
+- MUST NOT fabricate facts, sources, or capabilities
+- MUST keep tone professional, precise, and free of filler
+${formData.specificRequirements ? `- ${formData.specificRequirements}` : ""}
+
+# Examples
+Input: "I need help getting started."
+Output:
+1. Clarifying question targeting the user's actual goal
+2. A short framing of the problem in ${formData.domain || "the domain"}
+3. A numbered, prioritized action plan
+
+# Output Format
+Respond in markdown with these sections:
+## Summary
+One-paragraph synthesis of what the user needs.
+## Recommendations
+Numbered, prioritized, each with a one-line rationale.
+## Next Steps
+Bulleted, concrete, immediately actionable.
+## Risks & Caveats
+Anything the user should watch for.
+
+**Recommended AI Model:** Google Gemini 2.5 Pro`
+        : `# **Role:**
 You are a ${formData.domain || 'specialized'} AI assistant designed to ${formData.idea}.
 
 # **Objective:**
