@@ -6,12 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Copy, Download, Sparkles, Brain, Target, Settings, Search, Database, ExternalLink, Github, Layers } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-type Framework = "thinker-doer" | "context-engineering";
 
 interface FormData {
   idea: string;
