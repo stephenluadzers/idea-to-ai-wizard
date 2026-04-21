@@ -39,7 +39,6 @@ export const PromptDesigner = () => {
     specificRequirements: ""
   });
 
-  const [framework, setFramework] = useState<Framework>("thinker-doer");
 
   const [knowledgeSearch, setKnowledgeSearch] = useState<KnowledgeBaseSearchState>({
     results: [],
