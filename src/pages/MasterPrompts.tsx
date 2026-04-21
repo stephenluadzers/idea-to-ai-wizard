@@ -456,7 +456,10 @@ If any answer is no, revise that section before delivering.`;
                 className="flex-1"
               />
               <Button onClick={loadDefaultTemplate} variant="outline">
-                Load Template
+                Load Default
+              </Button>
+              <Button onClick={loadContextEngineeringTemplate} variant="outline">
+                Load Context Engineering
               </Button>
             </div>
             <Textarea
