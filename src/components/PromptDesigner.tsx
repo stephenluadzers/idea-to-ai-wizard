@@ -132,7 +132,7 @@ export const PromptDesigner = () => {
     }
   };
 
-  const generatePrompt = () => {
+  const generatePrompt = async () => {
     if (!formData.idea.trim()) {
       toast({
         title: "Missing Information",
@@ -143,89 +143,58 @@ export const PromptDesigner = () => {
     }
 
     setIsGenerating(true);
-    
-    // Simulate generation process
-    setTimeout(() => {
-      let knowledgeBaseSection = "";
-      if (knowledgeSearch.selectedBases.length > 0) {
-        knowledgeBaseSection = `\n\n**Recommended Knowledge Bases:**\n${knowledgeSearch.selectedBases.map(kb => `- [${kb.title}](${kb.url}) - ${kb.description} (${kb.source})`).join('\n')}`;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("synthesize-prompt", {
+        body: {
+          idea: formData.idea,
+          domain: formData.domain,
+          targetAudience: formData.targetAudience,
+          specificRequirements: formData.specificRequirements,
+          knowledgeBases: knowledgeSearch.selectedBases.map((kb) => ({
+            title: kb.title,
+            url: kb.url,
+            description: kb.description,
+            source: kb.source,
+          })),
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast({
+          title: "Generation failed",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
       }
 
-      const prompt = `# **Role:**
-You are a ${formData.domain || 'specialized'} AI assistant designed to ${formData.idea}.
+      if (!data?.prompt) {
+        throw new Error("No prompt returned by synthesizer");
+      }
 
-# **Objective:**
-To provide expert guidance and support in ${formData.domain || 'your domain'}, delivering precise, actionable insights tailored to ${formData.targetAudience || 'users'}.
+      setGeneratedPrompt(data.prompt);
 
-# **Persona & Operating Principles:**
-- Analytical, authoritative, and highly knowledgeable in ${formData.domain || 'your field'}
-- Tone: professional, clear, solution-oriented
-- Always reason before answering; never fabricate facts or sources
-- Ask a clarifying question when the user's request is ambiguous
-
----
-
-## CONTEXT ENGINEERING FRAMEWORK
-
-Every response you produce MUST be internally structured using the 6-part Context Engineering model below. Use this as your reasoning scaffold even when the final response is conversational.
-
-### 1. Role
-You are a ${formData.domain || 'specialized'} expert assistant serving ${formData.targetAudience || 'users'}. You bring domain-grounded expertise, not generic helpfulness.
-
-### 2. Task
-Analyze the user's input, apply expert reasoning, and deliver a clear, actionable response that directly advances their stated goal.
-
-### 3. Context
-- **Domain:** ${formData.domain || 'general'}
-- **Audience:** ${formData.targetAudience || 'general users'}
-- **Situation:** The user expects production-quality guidance grounded in best practices and real-world constraints.${knowledgeBaseSection}
-
-### 4. Constraints
-- MUST ground recommendations in evidence or explicit reasoning
-- MUST ask a clarifying question when input is ambiguous
-- MUST stay strictly within the ${formData.domain || 'stated'} domain
-- MUST NOT fabricate facts, sources, statistics, or capabilities
-- MUST keep tone professional, precise, and free of filler
-${formData.specificRequirements ? `- ${formData.specificRequirements}` : '- MUST prioritize accuracy and relevance over breadth'}
-
-### 5. Examples
-**Input:** "I need help getting started."
-**Output:**
-1. A clarifying question targeting the user's actual goal
-2. A short framing of the problem in ${formData.domain || 'the domain'}
-3. A numbered, prioritized action plan with brief rationale per step
-
-### 6. Output Format
-Respond in markdown with these sections:
-## Summary
-One-paragraph synthesis of what the user needs.
-## Recommendations
-Numbered, prioritized, each with a one-line rationale.
-## Next Steps
-Bulleted, concrete, immediately actionable.
-## Risks & Caveats
-Anything the user should watch for.
-
----
-
-# **Notes:**
-Focus on delivering clear, actionable guidance that directly addresses user needs. Emphasize practical implementation and measurable outcomes.
-
-**Recommended AI Model:** Google Gemini 2.5 Pro (for complex reasoning and multimodal capabilities)
-
-**Knowledge Base Integration:** ${knowledgeSearch.selectedBases.length > 0
-  ? `Leverage the ${knowledgeSearch.selectedBases.length} curated knowledge sources listed above for domain-specific information and data-driven insights.`
-  : `Consider integrating domain-specific datasets from Kaggle, GitHub repositories, and public APIs to enhance the assistant's knowledge base and provide more accurate, up-to-date information.`
-}`;
-
-      setGeneratedPrompt(prompt);
-      setIsGenerating(false);
-      
+      const modelsUsed: string[] = data.modelsUsed || [];
+      const synth: string | null = data.synthesizer || null;
       toast({
-        title: "Prompt Generated!",
-        description: "Your structured AI assistant prompt is ready.",
+        title: "Prompt synthesized",
+        description: synth
+          ? `Merged ${modelsUsed.length} reasoning models via ${synth}.`
+          : `Generated using ${modelsUsed.join(", ") || "ensemble"}.`,
       });
-    }, 2000);
+    } catch (err) {
+      console.error("synthesize-prompt error:", err);
+      toast({
+        title: "Generation error",
+        description: err instanceof Error ? err.message : "Failed to synthesize prompt",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const copyToClipboard = () => {
@@ -306,8 +275,8 @@ Focus on delivering clear, actionable guidance that directly addresses user need
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
                 <Layers className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">Context Engineering built in.</span>{" "}
-                  Every generated prompt includes the 6-part structure (Role · Task · Context · Constraints · Examples · Output Format) layered into the Thinker–Doer framework.
+                  <span className="font-medium text-foreground">Ensemble reasoning + Context Engineering.</span>{" "}
+                  Your idea is sent to Gemini 2.5 Pro, GPT-5, and GPT-5.2 in parallel with high reasoning effort, then GPT-5 synthesizes them into one superior prompt — fully structured with the 6-part Context Engineering framework.
                 </div>
               </div>
 
@@ -371,7 +340,7 @@ Focus on delivering clear, actionable guidance that directly addresses user need
                 {isGenerating ? (
                   <>
                     <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
-                    Generating Prompt...
+                    Synthesizing across 3 models...
                   </>
                 ) : (
                   <>
