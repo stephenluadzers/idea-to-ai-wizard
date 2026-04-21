@@ -314,6 +314,34 @@ ${knowledgeSearch.selectedBases.length > 0
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
+                <Label className="text-sm font-medium">Framework</Label>
+                <Select value={framework} onValueChange={(v) => setFramework(v as Framework)}>
+                  <SelectTrigger className="bg-secondary border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="thinker-doer">
+                      <div className="flex items-center gap-2">
+                        <Brain className="w-4 h-4" />
+                        Thinker–Doer (default)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="context-engineering">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-4 h-4" />
+                        Context Engineering (6-part)
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {framework === "context-engineering"
+                    ? "Role · Task · Context · Constraints · Examples · Output Format"
+                    : "Persona-driven role + objective + instructions structure"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="idea" className="text-sm font-medium">
                   Core Idea *
                 </Label>
