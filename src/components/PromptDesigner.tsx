@@ -340,7 +340,7 @@ export const PromptDesigner = () => {
                 {isGenerating ? (
                   <>
                     <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
-                    Generating Prompt...
+                    Synthesizing across 3 models...
                   </>
                 ) : (
                   <>
