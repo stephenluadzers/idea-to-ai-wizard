@@ -6,9 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Download, Sparkles, Brain, Target, Settings, Search, Database, ExternalLink, Github } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Copy, Download, Sparkles, Brain, Target, Settings, Search, Database, ExternalLink, Github, Layers } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+type Framework = "thinker-doer" | "context-engineering";
 
 interface FormData {
   idea: string;
@@ -38,13 +41,15 @@ export const PromptDesigner = () => {
     targetAudience: "",
     specificRequirements: ""
   });
-  
+
+  const [framework, setFramework] = useState<Framework>("thinker-doer");
+
   const [knowledgeSearch, setKnowledgeSearch] = useState<KnowledgeBaseSearchState>({
     results: [],
     isSearching: false,
     selectedBases: []
   });
-  
+
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -150,7 +155,46 @@ export const PromptDesigner = () => {
         knowledgeBaseSection = `\n\n**Recommended Knowledge Bases:**\n${knowledgeSearch.selectedBases.map(kb => `- [${kb.title}](${kb.url}) - ${kb.description} (${kb.source})`).join('\n')}`;
       }
 
-      const prompt = `# **Role:**
+      const prompt = framework === "context-engineering"
+        ? `# Role
+You are a ${formData.domain || "specialized"} expert assistant. ${formData.idea}
+
+# Task
+Help ${formData.targetAudience || "users"} accomplish their objectives in ${formData.domain || "this domain"} by analyzing their input, applying expert reasoning, and delivering clear, actionable output.
+
+# Context
+- Domain: ${formData.domain || "general"}
+- Audience: ${formData.targetAudience || "general users"}
+- Situation: The user is seeking expert assistance and expects production-quality guidance grounded in best practices.${knowledgeBaseSection}
+
+# Constraints
+- MUST ground recommendations in evidence or stated reasoning
+- MUST ask a clarifying question when input is ambiguous
+- MUST stay strictly within the ${formData.domain || "stated"} domain
+- MUST NOT fabricate facts, sources, or capabilities
+- MUST keep tone professional, precise, and free of filler
+${formData.specificRequirements ? `- ${formData.specificRequirements}` : ""}
+
+# Examples
+Input: "I need help getting started."
+Output:
+1. Clarifying question targeting the user's actual goal
+2. A short framing of the problem in ${formData.domain || "the domain"}
+3. A numbered, prioritized action plan
+
+# Output Format
+Respond in markdown with these sections:
+## Summary
+One-paragraph synthesis of what the user needs.
+## Recommendations
+Numbered, prioritized, each with a one-line rationale.
+## Next Steps
+Bulleted, concrete, immediately actionable.
+## Risks & Caveats
+Anything the user should watch for.
+
+**Recommended AI Model:** Google Gemini 2.5 Pro`
+        : `# **Role:**
 You are a ${formData.domain || 'specialized'} AI assistant designed to ${formData.idea}.
 
 # **Objective:**
@@ -269,6 +313,34 @@ ${knowledgeSearch.selectedBases.length > 0
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Framework</Label>
+                <Select value={framework} onValueChange={(v) => setFramework(v as Framework)}>
+                  <SelectTrigger className="bg-secondary border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="thinker-doer">
+                      <div className="flex items-center gap-2">
+                        <Brain className="w-4 h-4" />
+                        Thinker–Doer (default)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="context-engineering">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-4 h-4" />
+                        Context Engineering (6-part)
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {framework === "context-engineering"
+                    ? "Role · Task · Context · Constraints · Examples · Output Format"
+                    : "Persona-driven role + objective + instructions structure"}
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="idea" className="text-sm font-medium">
                   Core Idea *

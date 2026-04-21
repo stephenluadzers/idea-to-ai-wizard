@@ -11,7 +11,8 @@ import {
   Sparkles,
   MessageSquare,
   Plus,
-  Trash2
+  Trash2,
+  Layers
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +35,7 @@ import { formatDistanceToNow } from "date-fns";
 
 const navItems = [
   { title: "Master Prompts", url: "/master-prompts", icon: BookOpen },
+  { title: "Context Engineer", url: "/context-engineer", icon: Layers },
   { title: "Library", url: "/library", icon: Library },
   { title: "Chat History", url: "/history", icon: MessageSquare },
   { title: "Templates", url: "/templates", icon: LayoutTemplate },

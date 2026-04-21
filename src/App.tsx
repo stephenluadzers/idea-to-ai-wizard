@@ -14,6 +14,7 @@ import Analytics from "./pages/Analytics";
 import Auth from "./pages/Auth";
 import History from "./pages/History";
 import MasterPrompts from "./pages/MasterPrompts";
+import ContextEngineer from "./pages/ContextEngineer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/history" element={<History />} />
             <Route path="/master-prompts" element={<MasterPrompts />} />
+            <Route path="/context-engineer" element={<ContextEngineer />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
