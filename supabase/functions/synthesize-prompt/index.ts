@@ -104,7 +104,14 @@ Output ONLY the final merged prompt, in the exact structure the drafters used:
 # **Objective:**
 # **Persona & Operating Principles:**
 ---
-## CONTEXT ENGINEERING FRAMEWORK
+## THE 5 LAYERS OF CONTEXT
+### Layer 1 — Identity Context
+### Layer 2 — World Context
+### Layer 3 — Task Context
+### Layer 4 — Example Context
+### Layer 5 — Constraint Context
+---
+## CONTEXT ENGINEERING FRAMEWORK (6-part)
 ### 1. Role
 ### 2. Task
 ### 3. Context
