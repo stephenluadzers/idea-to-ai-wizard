@@ -153,6 +153,7 @@ export const PromptDesigner = () => {
           domain: formData.domain,
           targetAudience: formData.targetAudience,
           specificRequirements: formData.specificRequirements,
+          goal: formData.goal,
           knowledgeBases: knowledgeSearch.selectedBases.map((kb) => ({
             title: kb.title,
             url: kb.url,
