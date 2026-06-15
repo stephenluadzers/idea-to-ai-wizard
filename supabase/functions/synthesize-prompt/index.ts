@@ -150,6 +150,9 @@ Output ONLY the final merged prompt, in the exact structure the drafters used:
 ### 5. Examples
 ### 6. Output Format
 ---
+## /goal — GOAL EXECUTION PROTOCOL
+(Include the full 8-step protocol: Trigger forms, Default goal (use the user-supplied default verbatim, or state none configured), Execution steps 1-8, Hard rules.)
+---
 # **Notes:**
 
 Do not include commentary, headers like "Final Prompt", or any explanation. Output the prompt only.`;
@@ -159,6 +162,7 @@ interface Payload {
   domain?: string;
   targetAudience?: string;
   specificRequirements?: string;
+  goal?: string;
   knowledgeBases?: Array<{ title: string; url: string; description: string; source: string }>;
 }
 
@@ -169,6 +173,10 @@ function buildUserMessage(p: Payload): string {
         .join("\n")}`
     : "";
 
+  const goalBlock = p.goal && p.goal.trim()
+    ? `\n\nDEFAULT /goal (must appear verbatim as the Default goal inside the /goal protocol section):\n${p.goal.trim()}`
+    : `\n\nDEFAULT /goal: none provided — in the /goal protocol section, state "No default goal configured — require an explicit goal argument."`;
+
   return `Build the assistant prompt for this idea.
 
 CORE IDEA:
@@ -176,7 +184,7 @@ ${p.idea}
 
 DOMAIN: ${p.domain || "unspecified — infer the most useful domain framing"}
 TARGET AUDIENCE: ${p.targetAudience || "unspecified — infer realistic primary users"}
-SPECIFIC REQUIREMENTS: ${p.specificRequirements || "none stated — add expert defaults"}${kb}
+SPECIFIC REQUIREMENTS: ${p.specificRequirements || "none stated — add expert defaults"}${goalBlock}${kb}
 
 Produce the full prompt now using the required structure.`;
 }
