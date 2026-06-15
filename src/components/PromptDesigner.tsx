@@ -15,6 +15,7 @@ interface FormData {
   domain: string;
   targetAudience: string;
   specificRequirements: string;
+  goal: string;
 }
 
 interface KnowledgeBase {
