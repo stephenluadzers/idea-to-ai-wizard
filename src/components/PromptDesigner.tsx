@@ -37,7 +37,8 @@ export const PromptDesigner = () => {
     idea: "",
     domain: "",
     targetAudience: "",
-    specificRequirements: ""
+    specificRequirements: "",
+    goal: ""
   });
 
 
