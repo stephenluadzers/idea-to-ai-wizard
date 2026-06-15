@@ -75,8 +75,39 @@ Required output structure (markdown, exactly these top-level sections):
 
 ---
 
+## /goal — GOAL EXECUTION PROTOCOL
+
+When the user (or an upstream orchestrator like Hermes) sends a message that begins with \`/goal\` — or whenever a clear goal is otherwise stated — the assistant MUST switch into Goal Execution Mode and follow this protocol exactly:
+
+**Trigger forms:**
+- \`/goal <free-text goal>\`
+- \`/goal\` followed by a goal on the next line
+- An implicit goal detected in the user's message (in that case, confirm interpretation in step 1).
+
+**Default goal for this assistant (used when /goal is invoked with no argument):**
+[Insert the user-supplied default goal here verbatim. If none was supplied, write: "No default goal configured — require an explicit goal argument."]
+
+**Execution steps (always performed in order, visible to the user as labeled sections):**
+
+1. **Goal Restatement** — Restate the goal in one precise sentence. Surface any ambiguity and resolve it with a stated assumption, or ask ONE clarifying question only if the goal is unworkable as stated.
+2. **Success Criteria** — Define 3-6 measurable, testable criteria that determine when the goal is complete.
+3. **Decomposition** — Break the goal into an ordered plan of atomic sub-tasks. Each sub-task names its owner (assistant vs. user vs. tool), its input, and its output.
+4. **Risks & Constraints Check** — List the top risks, regulatory limits, and constraints (pulled from the Constraint Context layer) that apply to this goal. Refuse if any hard constraint is violated.
+5. **Execution** — Execute the sub-tasks the assistant can perform directly. For sub-tasks requiring the user, a tool, or external data, emit a clearly labeled \`[ACTION REQUIRED]\` block specifying exactly what is needed.
+6. **Deliverable** — Produce the final artifact(s) in the structure defined by the Output Format section. Inline any intermediate reasoning only if it is load-bearing for the user.
+7. **Verification** — Self-check the deliverable against every success criterion from step 2. State PASS/FAIL per criterion. If any FAIL, iterate before returning control.
+8. **Next-Step Suggestion** — Offer 1-3 concrete follow-up goals the user could run next (each phrased as a ready-to-paste \`/goal ...\` command).
+
+**Hard rules for /goal mode:**
+- MUST NOT skip steps 1, 2, 7. Steps 3-6 may be compressed only for trivially small goals, and that compression must be stated explicitly.
+- MUST stay inside the assistant's Role and Constraints. Never silently expand scope.
+- MUST be deterministic in structure: the same goal, run twice, produces the same section headings.
+- MUST treat \`/goal\` as having higher priority than casual conversational turns once invoked, until the goal is delivered or explicitly cancelled with \`/cancel\`.
+
+---
+
 # **Notes:**
-[Operating notes, recommended model, knowledge integration guidance.]
+[Operating notes, recommended model, knowledge integration guidance, and any caveats specific to /goal execution for this assistant.]
 
 Hard rules for you:
 - Engineer for sophistication beyond a generic template. Reason deeply about edge cases, failure modes, and adversarial inputs.
@@ -119,6 +150,9 @@ Output ONLY the final merged prompt, in the exact structure the drafters used:
 ### 5. Examples
 ### 6. Output Format
 ---
+## /goal — GOAL EXECUTION PROTOCOL
+(Include the full 8-step protocol: Trigger forms, Default goal (use the user-supplied default verbatim, or state none configured), Execution steps 1-8, Hard rules.)
+---
 # **Notes:**
 
 Do not include commentary, headers like "Final Prompt", or any explanation. Output the prompt only.`;
@@ -128,6 +162,7 @@ interface Payload {
   domain?: string;
   targetAudience?: string;
   specificRequirements?: string;
+  goal?: string;
   knowledgeBases?: Array<{ title: string; url: string; description: string; source: string }>;
 }
 
@@ -138,6 +173,10 @@ function buildUserMessage(p: Payload): string {
         .join("\n")}`
     : "";
 
+  const goalBlock = p.goal && p.goal.trim()
+    ? `\n\nDEFAULT /goal (must appear verbatim as the Default goal inside the /goal protocol section):\n${p.goal.trim()}`
+    : `\n\nDEFAULT /goal: none provided — in the /goal protocol section, state "No default goal configured — require an explicit goal argument."`;
+
   return `Build the assistant prompt for this idea.
 
 CORE IDEA:
@@ -145,7 +184,7 @@ ${p.idea}
 
 DOMAIN: ${p.domain || "unspecified — infer the most useful domain framing"}
 TARGET AUDIENCE: ${p.targetAudience || "unspecified — infer realistic primary users"}
-SPECIFIC REQUIREMENTS: ${p.specificRequirements || "none stated — add expert defaults"}${kb}
+SPECIFIC REQUIREMENTS: ${p.specificRequirements || "none stated — add expert defaults"}${goalBlock}${kb}
 
 Produce the full prompt now using the required structure.`;
 }

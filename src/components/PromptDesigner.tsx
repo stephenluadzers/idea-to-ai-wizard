@@ -15,6 +15,7 @@ interface FormData {
   domain: string;
   targetAudience: string;
   specificRequirements: string;
+  goal: string;
 }
 
 interface KnowledgeBase {
@@ -36,7 +37,8 @@ export const PromptDesigner = () => {
     idea: "",
     domain: "",
     targetAudience: "",
-    specificRequirements: ""
+    specificRequirements: "",
+    goal: ""
   });
 
 
@@ -151,6 +153,7 @@ export const PromptDesigner = () => {
           domain: formData.domain,
           targetAudience: formData.targetAudience,
           specificRequirements: formData.specificRequirements,
+          goal: formData.goal,
           knowledgeBases: knowledgeSearch.selectedBases.map((kb) => ({
             title: kb.title,
             url: kb.url,
@@ -330,6 +333,23 @@ export const PromptDesigner = () => {
                   onChange={(e) => handleInputChange("specificRequirements", e.target.value)}
                   className="bg-secondary border-border/50"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="goal" className="text-sm font-medium flex items-center gap-2">
+                  <Target className="w-4 h-4 text-primary" />
+                  /goal — Default Mission for the Assistant
+                </Label>
+                <Textarea
+                  id="goal"
+                  placeholder="Describe a concrete goal the assistant should be able to execute when invoked with /goal (e.g., 'Plan and draft a multi-channel launch campaign for a new SaaS product')."
+                  value={formData.goal}
+                  onChange={(e) => handleInputChange("goal", e.target.value)}
+                  className="min-h-[90px] bg-secondary border-border/50"
+                />
+                <p className="text-xs text-muted-foreground">
+                  This becomes a first-class <code className="px-1 rounded bg-secondary">/goal</code> directive inside the generated prompt — Hermes (or any model running this prompt) will know how to plan, decompose, and execute goals end-to-end.
+                </p>
               </div>
               
               <Button 
