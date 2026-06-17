@@ -278,8 +278,8 @@ export const PromptDesigner = () => {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
                 <Layers className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <div className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">Ensemble reasoning + Context Engineering.</span>{" "}
-                  Your idea is sent to Gemini 2.5 Pro, GPT-5, and GPT-5.2 in parallel with high reasoning effort, then GPT-5 synthesizes them into one superior prompt — fully structured with the 6-part Context Engineering framework.
+                  <span className="font-medium text-foreground">Ensemble reasoning + Context + Loop Engineering.</span>{" "}
+                  Your idea runs through Gemini 2.5 Pro, GPT-5, and GPT-5.2 in parallel (high reasoning), then GPT-5 synthesizes them into one prompt embedding the 5 Layers, 6-part Context Engineering, /goal protocol, and the Plan→Draft→Critique→Repair→Verify→Decide loop.
                 </div>
               </div>
 
