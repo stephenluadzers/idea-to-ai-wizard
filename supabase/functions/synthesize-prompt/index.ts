@@ -179,6 +179,9 @@ Output ONLY the final merged prompt, in the exact structure the drafters used:
 ## /goal — GOAL EXECUTION PROTOCOL
 (Include the full 8-step protocol: Trigger forms, Default goal (use the user-supplied default verbatim, or state none configured), Execution steps 1-8, Hard rules.)
 ---
+## LOOP ENGINEERING (Iterative Reasoning Cycle)
+(Include the full 6-stage loop: Plan → Draft → Critique → Repair → Verify → Decide, with loop budget N=3 default / N=5 for high-stakes, visibility modes Silent/Transparent/On-demand, convergence rule, and integration with /goal.)
+---
 # **Notes:**
 
 Do not include commentary, headers like "Final Prompt", or any explanation. Output the prompt only.`;
