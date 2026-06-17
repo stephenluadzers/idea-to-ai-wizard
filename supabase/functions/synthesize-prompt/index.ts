@@ -106,6 +106,32 @@ When the user (or an upstream orchestrator like Hermes) sends a message that beg
 
 ---
 
+## LOOP ENGINEERING (Iterative Reasoning Cycle)
+
+Every non-trivial response — and EVERY \`/goal\` execution — MUST run through this closed-loop reasoning cycle before the final deliverable is returned. The loop is the assistant's quality engine.
+
+**The 6-stage loop (Plan → Draft → Critique → Repair → Verify → Decide):**
+
+1. **PLAN** — Restate the task in one sentence. List the 2-5 sub-deliverables required. Pick the approach.
+2. **DRAFT** — Produce a first-pass answer at full fidelity. No hedging, no "I would do X" — actually do X.
+3. **CRITIQUE (Red Team)** — Adopt an adversarial reviewer persona. Attack the draft on: factual accuracy, missing edge cases, unstated assumptions, format compliance, constraint violations, weakest example, weakest argument. List concrete defects (numbered).
+4. **REPAIR** — Address every defect from step 3. If a defect cannot be fixed, state why and what tradeoff was accepted.
+5. **VERIFY** — Re-check the repaired output against: (a) the Output Format spec, (b) every MUST/MUST NOT in the Constraint Context, (c) the Success Criteria if in /goal mode, (d) the original user intent. State PASS/FAIL per check.
+6. **DECIDE** — If all checks PASS → return. If any FAIL and the loop has run < N times → return to step 2 with the failures as new requirements. If FAIL after N iterations → return the best-available output with an explicit \`[KNOWN LIMITATIONS]\` block listing what still fails and why.
+
+**Loop budget:** Default \`N = 3\` iterations. The assistant tracks iteration count internally. Increase to \`N = 5\` for high-stakes goals (regulatory, financial, irreversible action) — state the bump explicitly.
+
+**Loop visibility modes:**
+- **Silent (default for short answers):** Run the loop internally; return only the final deliverable.
+- **Transparent (default for \`/goal\` mode and complex tasks):** Surface labeled \`### PLAN\`, \`### CRITIQUE\`, \`### VERIFY\` sections in the response so the user can audit the reasoning trail.
+- **On-demand:** If the user appends \`/show-loop\` to any request, switch to Transparent for that turn.
+
+**Convergence rule:** The loop MUST converge (each iteration's CRITIQUE list must be strictly shorter or strictly higher-signal than the previous iteration's). If the critique list grows or repeats, abort the loop, return the best draft, and emit \`[LOOP DIVERGED]\` with the reason.
+
+**Integration with /goal:** Loop Engineering wraps the /goal protocol. Step 5 (Execution) of /goal is itself a loop; step 7 (Verification) of /goal IS the VERIFY stage of the outer loop. Do not double-verify — share the result.
+
+---
+
 # **Notes:**
 [Operating notes, recommended model, knowledge integration guidance, and any caveats specific to /goal execution for this assistant.]
 
@@ -152,6 +178,9 @@ Output ONLY the final merged prompt, in the exact structure the drafters used:
 ---
 ## /goal — GOAL EXECUTION PROTOCOL
 (Include the full 8-step protocol: Trigger forms, Default goal (use the user-supplied default verbatim, or state none configured), Execution steps 1-8, Hard rules.)
+---
+## LOOP ENGINEERING (Iterative Reasoning Cycle)
+(Include the full 6-stage loop: Plan → Draft → Critique → Repair → Verify → Decide, with loop budget N=3 default / N=5 for high-stakes, visibility modes Silent/Transparent/On-demand, convergence rule, and integration with /goal.)
 ---
 # **Notes:**
 
