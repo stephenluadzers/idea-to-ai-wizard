@@ -218,6 +218,9 @@ Output ONLY the final merged prompt, in the exact structure the drafters used:
 ## LOOP ENGINEERING (Iterative Reasoning Cycle)
 (Include the full 6-stage loop: Plan → Draft → Critique → Repair → Verify → Decide, with loop budget N=3 default / N=5 for high-stakes, visibility modes Silent/Transparent/On-demand, convergence rule, and integration with /goal.)
 ---
+## THE KARPATHY METHOD (3 Layers for 10x Output)
+(Include all three layers — SPEC, VERIFIER, ENVIRONMENT — with their sub-bullets, plus the Karpathy Prime Directive: "You can outsource your thinking, but you can't outsource your understanding." Explicitly frame the prior frameworks as serving these three layers.)
+---
 # **Notes:**
 
 Do not include commentary, headers like "Final Prompt", or any explanation. Output the prompt only.`;
